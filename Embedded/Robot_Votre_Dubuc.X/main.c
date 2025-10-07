@@ -5,17 +5,29 @@
 #include "timer.h"
 #include "IO.h"
 #include "PWM.h"
+#include "Robot.h"
+#include "ADC.h"
+
+unsigned int ADCValue0;
+unsigned int ADCValue1;
+unsigned int ADCValue2;
 
 int main(void) {
+    InitOscillator();
+    InitIO();
+    
     //Initialisation oscillateur
     InitTimer1();
     InitTimer23();
-    InitOscillator();
     InitPWM();
-    PWMSetSpeed(30);
+    InitADC1();
+    //PWMSetSpeed(20,0);
+
+    //PWMUpdateSpeed();
+    PWMSetSpeedConsigne(20, MOTEUR_GAUCHE);
+
     //Configuration des input et output (IO)
 
-    InitIO();
     LED_BLANCHE_1 = 1;
     LED_BLEUE_1 = 1;
     LED_ORANGE_1 = 1;
@@ -28,7 +40,16 @@ int main(void) {
     LED_ROUGE_2 = 1;
     LED_VERTE_2 = 1;
     //Boucle Principale
+    //unsigned int * result = ADCGetResult();
 
     while (1) {
+        unsigned int * result = ADCGetResult();
+        if (ADCIsConversionFinished()) {
+            ADCClearConversionFinishedFlag();
+            result = ADCGetResult();
+            ADCValue0 = result[0];
+            ADCValue1 = result[1];
+            ADCValue2 = result[2];
+        }
     }
 }
