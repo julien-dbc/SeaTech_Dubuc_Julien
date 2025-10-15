@@ -23,29 +23,30 @@ void InitPWM(void) {
     PTCONbits.PTEN = 1;
 }
 double talon = 50;
-/*void PWMSetSpeed(float vitesseEnPourcents, float moteur)
-{ if (moteur==MOTEUR_GAUCHE){
-    if(vitesseEnPourcents<0){
-        PDC1 = talon;
-        SDC1 = -vitesseEnPourcents * PWMPER + talon;
-    }else{
-        PDC1 = vitesseEnPourcents * PWMPER + talon;
-        SDC1 = talon;
-    }
-}else if (moteur==MOTEUR_DROIT){
-    if(vitesseEnPourcents<0){
-        PDC2 =  talon;
-        SDC2 = -vitesseEnPourcents * PWMPER + talon;
-    }else{
-        PDC2 = vitesseEnPourcents * PWMPER + talon;
-        SDC2 = talon;
-        
-    }
-}
-   
-} */
 
-float acceleration = 0.8;
+void PWMSetSpeed(float vitesseEnPourcents, float moteur) {
+    if (moteur == MOTEUR_GAUCHE) {
+        if (vitesseEnPourcents < 0) {
+            PDC1 = talon;
+            SDC1 = -vitesseEnPourcents * PWMPER + talon;
+        } else {
+            PDC1 = vitesseEnPourcents * PWMPER + talon;
+            SDC1 = talon;
+        }
+    } else if (moteur == MOTEUR_DROIT) {
+        if (vitesseEnPourcents < 0) {
+            PDC2 = talon;
+            SDC2 = -vitesseEnPourcents * PWMPER + talon;
+        } else {
+            PDC2 = vitesseEnPourcents * PWMPER + talon;
+            SDC2 = talon;
+
+        }
+    }
+
+}
+
+float acceleration = 50;
 
 void PWMUpdateSpeed() {
     // Cette fonction est appelee sur timer et permet de suivre des rampes d acceleration
