@@ -5,7 +5,6 @@
 #include "ADC.h"
 #include "main.h"
 #include "ChipConfig.h"
-
 //Initialisation d?un timer 16 bits
 
 void InitTimer1(void) {
@@ -22,16 +21,16 @@ void InitTimer1(void) {
     IEC0bits.T1IE = 1; // Enable Timer interrupt
     T1CONbits.TON = 1; // Enable Timer
     
-    SetFreqTimer1(2.5);
+    SetFreqTimer1(100);
 }
 //Interruption du timer 1
 
 void __attribute__((interrupt, no_auto_psv)) _T1Interrupt(void) {
     IFS0bits.T1IF = 0;
     //LED_BLANCHE_1 = !LED_BLANCHE_1;
-    LED_BLEUE_1 = ! LED_BLEUE_1
+    LED_BLEUE_2 = ! LED_BLEUE_2;
     ADC1StartConversionSequence();
-    //PWMUpdateSpeed();    
+    PWMUpdateSpeed();    
 }
 //Initialisation d?un timer 32 bits
 
@@ -55,17 +54,8 @@ unsigned char toggle = 0;
 
 void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void) {
     IFS0bits.T3IF = 0; // Clear Timer3 Interrupt Flag
-    LED_ORANGE_1 = !LED_ORANGE_1;
-    IFS0bits.T3IF = 0; // Clear Timer3 Interrupt Flag
-    if (toggle == 0) {
-        PWMSetSpeedConsigne(30, MOTEUR_DROIT);
-        PWMSetSpeedConsigne(30, MOTEUR_GAUCHE);
-        toggle = 1;
-    } else {
-        PWMSetSpeedConsigne(-30, MOTEUR_DROIT);
-        PWMSetSpeedConsigne(-30, MOTEUR_GAUCHE);
-        toggle = 0;
-    }
+    LED_ORANGE_2 = !LED_ORANGE_2;
+
 }
 
 
@@ -97,17 +87,17 @@ void SetFreqTimer1(float freq)
 unsigned long timestamp;
 void InitTimer4(void) {
     //Timer4 pour horodater les mesures (1ms)
-    T1CONbits.TON = 0; // Disable Timer
+    T4CONbits.TON = 0; // Disable Timer
     //T1CONbits.TCKPS = 0b10; //Prescaler
     //11 = 1:256 prescale value
     //10 = 1:64 prescale value
     //01 = 1:8 prescale value
     //00 = 1:1 prescale value
-    T1CONbits.TCS = 0; //clock source = internal clock
+    T4CONbits.TCS = 0; //clock source = internal clock
     //PR1 = 60000000/64/100;
     IFS1bits.T4IF = 0; // Clear Timer Interrupt Flag
     IEC1bits.T4IE = 1; // Enable Timer interrupt
-    T1CONbits.TON = 1; // Enable Timer
+    T4CONbits.TON = 1; // Enable Timer
     
     SetFreqTimer4(1000);
 }
@@ -116,11 +106,13 @@ void InitTimer4(void) {
 void __attribute__((interrupt, no_auto_psv)) _T4Interrupt(void) {
     IFS1bits.T4IF = 0;
     //LED_BLANCHE_1 = !LED_BLANCHE_1;
-    LED_VERTE_1 = ! LED_VERTE_1
+    LED_VERTE_2 = ! LED_VERTE_2;
     timestamp+=1;
-    ADC1StartConversionSequence();
+    //ADC1StartConversionSequence();
+    OperatingSystemLoop();
     //PWMUpdateSpeed();    
 }
+
 void SetFreqTimer4(float freq)
 {
     T4CONbits.TCKPS = 0b00; //00 = 1:1 prescaler value

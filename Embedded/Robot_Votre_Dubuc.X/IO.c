@@ -32,9 +32,13 @@ void InitIO()
     _TRISA10 = 0; // LED Rouge
     _TRISH3 = 0; // LED Verte 
     
+    _TRISJ10 = 0; // EN_PWM 
     //****** Moteurs ************************
 
     // Configuration des entrées
+    //Bouton 
+    _TRISH1 = 0;     // Configure RG6 en entrée
+ 
     
 
     /****************************************************************************************************/
