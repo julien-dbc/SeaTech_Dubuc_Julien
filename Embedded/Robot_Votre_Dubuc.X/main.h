@@ -49,8 +49,11 @@
 #define OBSTACLE_LEGER_DROITE 4
 #define OBSTACLE_EN_FACE 5
 
+
+// Assurez-vous que ces valeurs ne chevauchent pas les états existants.
 // Prototypes
 void OperatingSystemLoop();
 void SetNextRobotStateInAutomaticMode();
+void StopRobotCompletely();
 
 #endif	/* MAIN_H */

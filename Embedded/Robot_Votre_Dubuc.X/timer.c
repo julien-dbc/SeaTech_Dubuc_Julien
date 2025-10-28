@@ -83,7 +83,7 @@ void SetFreqTimer1(float freq)
     else
         PR1 = (int)(FCY / freq);
 }
-
+unsigned long t1;
 unsigned long timestamp;
 void InitTimer4(void) {
     //Timer4 pour horodater les mesures (1ms)
@@ -99,7 +99,7 @@ void InitTimer4(void) {
     IEC1bits.T4IE = 1; // Enable Timer interrupt
     T4CONbits.TON = 1; // Enable Timer
     
-    SetFreqTimer4(1000);
+    SetFreqTimer4(5000);
 }
 //Interruption du timer 1
 
@@ -108,6 +108,7 @@ void __attribute__((interrupt, no_auto_psv)) _T4Interrupt(void) {
     //LED_BLANCHE_1 = !LED_BLANCHE_1;
     LED_VERTE_2 = ! LED_VERTE_2;
     timestamp+=1;
+    t1+=1;
     //ADC1StartConversionSequence();
     OperatingSystemLoop();
     //PWMUpdateSpeed();    
