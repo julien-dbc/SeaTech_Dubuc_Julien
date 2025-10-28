@@ -1,5 +1,4 @@
-/* 
- * File:   main.h
+/* * File:   main.h
  * Author: E306-PC2
  *
  * Created on 15 octobre 2025, 11:25
@@ -41,7 +40,7 @@
 #define STATE_RECULE 18
 #define STATE_RECULE_EN_COURS 19
 
-// Types d'obstacles détectés
+// Types d'obstacles détectés (Obsolète avec le système 5-bits, mais gardé pour référence)
 #define PAS_D_OBSTACLE 0
 #define OBSTACLE_A_GAUCHE 1
 #define OBSTACLE_LEGER_GAUCHE 2
@@ -52,8 +51,24 @@
 
 // Assurez-vous que ces valeurs ne chevauchent pas les états existants.
 // Prototypes
-void OperatingSystemLoop();
-void SetNextRobotStateInAutomaticMode();
-void StopRobotCompletely();
+void OperatingSystemLoop(void);
+void SetNextRobotStateInAutomaticMode(void);
+void StopRobotCompletely(void);
+
+
+#define DANGER_CRITIQUE_CENTRE 25 // Obstacle très proche, action d'urgence
+#define DANGER_CRITIQUE_COTE 25
+
+#define DANGER_PROCHE_CENTRE 35   // Obstacle proche, rotation forte
+#define DANGER_PROCHE_COTE 35
+
+#define DANGER_LOINTAIN_CENTRE 45 // Obstacle lointain, léger ajustement
+#define DANGER_LOINTAIN_COTE_EXT 25
+
+#define dist 30
+
+
+#define SEUIL_ETAT_2_CRITIQUE 20 // En dessous = État 2 (Critique)
+#define SEUIL_ETAT_1_LOINTAIN 35 // En dessous = État 1 (Lointain), Au dessus = État 0 (Dégagé)
 
 #endif	/* MAIN_H */
