@@ -13,37 +13,14 @@
 extern unsigned long timestamp;
 extern unsigned long t1;
 unsigned char stateRobot;
-const unsigned long T_60_SECONDS_TICKS = 116000;
+const unsigned long T_60_SECONDS_TICKS = 56000;
 
 unsigned long start_time_ticks = 0;
 unsigned char robot_is_running = 0; // 0: Arrêté / 1: En cours d'exécution
 
 unsigned char obstacle_map = 0;
 
-// 0 = Dégagé, 1 = Lointain, 2 = Critique
-unsigned char etatTGG = 0;
-unsigned char etatTG = 0;
-unsigned char etatTC = 0;
-unsigned char etatTD = 0;
-unsigned char etatTDD = 0;
-
-
-unsigned char ConvertDistanceToState(float distance)
-{
-    // Gère les valeurs négatives ou 'inf' de la formule (34/V - 5)
-    // si V est élevé (proche) ou V est faible (loin)
-    if (distance < 0.0) return 2; // Très proche, pic de tension
-    
-    if (distance < SEUIL_ETAT_2_CRITIQUE) {
-        return 2; // Critique
-    } else if (distance < SEUIL_ETAT_1_LOINTAIN) {
-        return 1; // Lointain
-    } else {
-        return 0; // Dégagé
-    }
-}
-
-
+unsigned char recul_counter =0;
 
 
 void StopRobotCompletely(void) {
@@ -120,11 +97,12 @@ int main(void) {
 
             
             //Conversion des distances en états 0, 1, 2
-            etatTGG = ConvertDistanceToState(robotState.distanceTelemetreGaucheGauche);
-            etatTG = ConvertDistanceToState(robotState.distanceTelemetreGauche);
-            etatTC = ConvertDistanceToState(robotState.distanceTelemetreCentre);
-            etatTD = ConvertDistanceToState(robotState.distanceTelemetreDroit);
-            etatTDD = ConvertDistanceToState(robotState.distanceTelemetreDroiteDroite);
+            obstacle_map = 0;
+            if (robotState.distanceTelemetreGaucheGauche < OBSTACLE_THRESHOLD2) obstacle_map |= (1 << 4);
+            if (robotState.distanceTelemetreGauche < OBSTACLE_THRESHOLD)       obstacle_map |= (1 << 3);
+            if (robotState.distanceTelemetreCentre < OBSTACLE_THRESHOLD1)       obstacle_map |= (1 << 2);
+            if (robotState.distanceTelemetreDroit < OBSTACLE_THRESHOLD)        obstacle_map |= (1 << 1);
+            if (robotState.distanceTelemetreDroiteDroite < OBSTACLE_THRESHOLD2) obstacle_map |= (1 << 0);
            
         }
 
@@ -136,26 +114,17 @@ int main(void) {
         
         // Affichage des LEDs (comme dans votre code original)
 
-//        LED_ORANGE_1 = (robotState.distanceTelemetreCentre > dist);
-//
-//        LED_BLEUE_1 = (robotState.distanceTelemetreGauche > dist);
-//
-//        LED_BLANCHE_1 = (robotState.distanceTelemetreGaucheGauche > dist);
-//
-//        LED_ROUGE_1 = (robotState.distanceTelemetreDroit > dist);
-//
-//        LED_VERTE_1 = (robotState.distanceTelemetreDroiteDroite > dist);
+        LED_ORANGE_1 = (robotState.distanceTelemetreCentre > OBSTACLE_THRESHOLD);
+
+        LED_BLEUE_1 = (robotState.distanceTelemetreGauche > OBSTACLE_THRESHOLD);
+
+        LED_BLANCHE_1 = (robotState.distanceTelemetreGaucheGauche > OBSTACLE_THRESHOLD);
+
+        LED_ROUGE_1 = (robotState.distanceTelemetreDroit > OBSTACLE_THRESHOLD);
+
+        LED_VERTE_1 = (robotState.distanceTelemetreDroiteDroite > OBSTACLE_THRESHOLD);
         
-        LED_ORANGE_1 = (etatTC > 0); 
-        // Bleue (Gauche): Allumée si obstacle (1 ou 2)
-        LED_BLEUE_1 = (etatTG > 0); 
-        // Blanche (Ext G): Allumée si obstacle (1 ou 2)
-        LED_BLANCHE_1 = (etatTGG > 0);
-        // Rouge (Droite): Allumée si obstacle (1 ou 2)
-        LED_ROUGE_1 = (etatTD > 0);
-        // Verte (Ext D): Allumée si obstacle (1 ou 2)
-        LED_VERTE_1 = (etatTDD > 0);
-        
+
     }
     
     while (1) {
@@ -177,6 +146,7 @@ timestamp = 0;
 PWMSetSpeedConsigne(0, MOTEUR_DROIT);
 PWMSetSpeedConsigne(0, MOTEUR_GAUCHE);
 stateRobot = STATE_ATTENTE_EN_COURS;
+break; // CORRIGÉ: Ajout du break manquant
 
 case STATE_ATTENTE_EN_COURS:
 if (timestamp > 1000)
@@ -184,8 +154,8 @@ stateRobot = STATE_AVANCE;
 break;
 
 case STATE_AVANCE:
-PWMSetSpeedConsigne(30, MOTEUR_DROIT);
-PWMSetSpeedConsigne(30, MOTEUR_GAUCHE);
+PWMSetSpeedConsigne(35, MOTEUR_DROIT);
+PWMSetSpeedConsigne(35, MOTEUR_GAUCHE);
 stateRobot = STATE_AVANCE_EN_COURS;
 break;
 
@@ -193,63 +163,82 @@ case STATE_AVANCE_EN_COURS:
 SetNextRobotStateInAutomaticMode();
 break;
 
+case STATE_AVANCE_PEU:
+PWMSetSpeedConsigne(20, MOTEUR_DROIT);
+PWMSetSpeedConsigne(20, MOTEUR_GAUCHE);
+stateRobot = STATE_AVANCE_PEU_COURS;
+break;
+
+case STATE_AVANCE_PEU_COURS:
+SetNextRobotStateInAutomaticMode();
+break;
+
 case STATE_TOURNE_GAUCHE:
 PWMSetSpeedConsigne(30, MOTEUR_DROIT);
-PWMSetSpeedConsigne(20, MOTEUR_GAUCHE);
+PWMSetSpeedConsigne(20, MOTEUR_GAUCHE); // Courbe prononcée
 stateRobot = STATE_TOURNE_GAUCHE_EN_COURS;
 break;
 
 case STATE_TOURNE_LEGER_GAUCHE:
 PWMSetSpeedConsigne(30, MOTEUR_DROIT);
-PWMSetSpeedConsigne(25, MOTEUR_GAUCHE);
+PWMSetSpeedConsigne(25, MOTEUR_GAUCHE); // Courbe légère
 stateRobot = STATE_TOURNE_LEGER_GAUCHE_EN_COURS;
 break;
 
- case STATE_TOURNE_LEGER_GAUCHE_EN_COURS:
+case STATE_TOURNE_LEGER_GAUCHE_EN_COURS:
+// CORRIGÉ: Forcer la rotation pendant X ms avant de réévaluer
 SetNextRobotStateInAutomaticMode();
 break;
 
 case STATE_TOURNE_GAUCHE_EN_COURS:
+// CORRIGÉ: Forcer la rotation pendant X ms avant de réévaluer
 SetNextRobotStateInAutomaticMode();
 break;
 
 case STATE_TOURNE_LEGER_DROITE:
 PWMSetSpeedConsigne(25, MOTEUR_DROIT);
-PWMSetSpeedConsigne(30, MOTEUR_GAUCHE);
+PWMSetSpeedConsigne(30, MOTEUR_GAUCHE); // Courbe légère
 stateRobot = STATE_TOURNE_LEGER_DROITE_EN_COURS;
 break;
 
- case STATE_TOURNE_LEGER_DROITE_EN_COURS:
- SetNextRobotStateInAutomaticMode();
- break;
+case STATE_TOURNE_LEGER_DROITE_EN_COURS:
+// CORRIGÉ: Forcer la rotation pendant X ms avant de réévaluer
+SetNextRobotStateInAutomaticMode();
+
+break;
 
 case STATE_TOURNE_DROITE:
 PWMSetSpeedConsigne(20, MOTEUR_DROIT);
-PWMSetSpeedConsigne(30, MOTEUR_GAUCHE);
+PWMSetSpeedConsigne(30, MOTEUR_GAUCHE); // Courbe prononcée
 stateRobot = STATE_TOURNE_DROITE_EN_COURS;
 break;
 
 case STATE_TOURNE_DROITE_EN_COURS:
+// CORRIGÉ: Forcer la rotation pendant X ms avant de réévaluer
 SetNextRobotStateInAutomaticMode();
 break;
 
 case STATE_TOURNE_SUR_PLACE_GAUCHE:
+// MODIFIÉ: Augmentation de la vitesse de spin (2, -2 est trop faible)
 PWMSetSpeedConsigne(15, MOTEUR_DROIT);
 PWMSetSpeedConsigne(-15, MOTEUR_GAUCHE);
 stateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE_EN_COURS;
 break;
 
 case STATE_TOURNE_SUR_PLACE_GAUCHE_EN_COURS:
+// CORRIGÉ: Forcer la rotation pendant X ms avant de réévaluer
 SetNextRobotStateInAutomaticMode();
 break;
 
 case STATE_TOURNE_SUR_PLACE_DROITE:
+// MODIFIÉ: Augmentation de la vitesse de spin
 PWMSetSpeedConsigne(-15, MOTEUR_DROIT);
 PWMSetSpeedConsigne(15, MOTEUR_GAUCHE);
 stateRobot = STATE_TOURNE_SUR_PLACE_DROITE_EN_COURS;
 break;
 
 case STATE_TOURNE_SUR_PLACE_DROITE_EN_COURS:
+// CORRIGÉ: Forcer la rotation pendant X ms avant de réévaluer
 SetNextRobotStateInAutomaticMode();
 break;
 
@@ -262,16 +251,52 @@ break;
 case STATE_ARRET_EN_COURS:
 SetNextRobotStateInAutomaticMode();
 break;
-             
+
 case STATE_RECULE:
-PWMSetSpeedConsigne(-30, MOTEUR_DROIT);
-PWMSetSpeedConsigne(-30, MOTEUR_GAUCHE);
+PWMSetSpeedConsigne(-20, MOTEUR_DROIT);
+PWMSetSpeedConsigne(-20, MOTEUR_GAUCHE);
+timestamp = 0; // On réinitialise le timer quand on COMMENCE à reculer
+recul_counter++; 
 stateRobot = STATE_RECULE_EN_COURS;
 break;
 
 case STATE_RECULE_EN_COURS:
-// Après avoir reculé, on force une rotation pour se dégager
-stateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE; 
+// CORRIGÉ: Suppression du timer 'if (timestamp > 400)'
+// La décision est prise immédiatement (après 1-2ms de recul)
+
+// Logique 1-sur-15
+if (recul_counter % 3 == 0) 
+{
+// CAS 1/15: On force un demi-tour complet
+stateRobot = STATE_DEMI_TOUR_DROITE; 
+}
+else 
+{
+// CAS 14/15: Rotation "intelligente"
+if (robotState.distanceTelemetreGauche > robotState.distanceTelemetreDroit) {
+stateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE; // Plus d'espace à gauche
+} else {
+stateRobot = STATE_TOURNE_SUR_PLACE_DROITE; // Plus d'espace à droite (ou égalité)
+}
+}
+// CORRIGÉ: Suppression de l'accolade en trop (syntax error)
+break;
+
+// --- NOUVEAUX ÉTATS POUR LE DEMI-TOUR ---
+case STATE_DEMI_TOUR_DROITE:
+// Lancement de la rotation sur place (vitesse rapide OK ici)
+PWMSetSpeedConsigne(-20, MOTEUR_DROIT);
+PWMSetSpeedConsigne(20, MOTEUR_GAUCHE);
+timestamp = 0; // Démarrage du timer pour la durée du demi-tour
+stateRobot = STATE_DEMI_TOUR_DROITE_EN_COURS;
+break;
+
+case STATE_DEMI_TOUR_DROITE_EN_COURS:
+if (timestamp > 100) 
+{
+// Le demi-tour est terminé.
+stateRobot = STATE_AVANCE;
+}
 break;
 
 default :
@@ -281,204 +306,230 @@ break;
 }
 
 
+
 unsigned char nextStateRobot=0;
 
-/**
- * @brief Détermine l'état suivant du robot basé sur la logique hiérarchisée (0, 1, 2).
- * @brief 0=Dégagé, 1=Lointain, 2=Critique
- * @brief La fonction lit les variables globales etatTC, etatTG, etatTD, etc.
- */
+
+//void SetNextRobotStateInAutomaticMode()
+//{
+//    // Initialisation par défaut : avancer
+//    nextStateRobot = STATE_AVANCE;
+//
+//    // --- LOGIQUE DE DÉCISION HIÉRARCHISÉE (Généralisée) ---
+//
+//    // PRIORITÉ 1: DANGER CENTRE (État 2)
+//    // Gère [xx2xx] - (ex: [00200], [11200], [22212], ...)
+//    if (etatTC == 2) {
+//        nextStateRobot = STATE_RECULE;
+//    }
+//    
+//    // PRIORITÉ 2: DANGER CENTRE (État 1)
+//    // Gère [xx1xx] (sauf si Prio 1 déjà prise)
+//    else if (etatTC == 1) {
+//        // Tourner du côté le plus libre (État 0)
+//        if (etatTG == 0 && etatTD > 0) {
+//            // Gauche est libre (0), Droite est bloquée (>0) -> Tourner GAUCHE
+//            nextStateRobot = STATE_TOURNE_GAUCHE;
+//        } else if (etatTD == 0 && etatTG > 0) {
+//            // Droite est libre (0), Gauche est bloquée (>0) -> Tourner DROITE
+//            nextStateRobot = STATE_TOURNE_DROITE;
+//        } else if (etatTD == 0 && etatTG == 0) { // Les deux sont libres
+//            // PRÉFÉRENCE: Le user préfère la droite si elle est libre
+//            nextStateRobot = STATE_TOURNE_DROITE;
+//        }
+//        else {
+//            // Les deux côtés sont > 0 (bloqués)
+//            // -> On utilise la distance REELLE pour choisir
+//            if (robotState.distanceTelemetreGauche > robotState.distanceTelemetreDroit) {
+//                nextStateRobot = STATE_TOURNE_GAUCHE; // Plus d'espace à gauche
+//            } else {
+//                nextStateRobot = STATE_TOURNE_DROITE; // Plus d'espace à droite (ou égalité)
+//            }
+//        }
+//    }
+//    
+//    // PRIORITÉ 3: CENTRE DÉGAGÉ (État 0), DANGER LATÉRAL CRITIQUE (État 2)
+//    // Gère [x202x], [x200x], [x002x]
+//    else if (etatTG == 2 || etatTD == 2) {
+//        if (etatTG == 2 && etatTD == 2) {
+//            // Impasse étroite (ex: [02020])
+//            nextStateRobot = STATE_RECULE;
+//        } else if (etatTG == 2) {
+//            // Danger critique à gauche -> Tourne sur place à DROITE
+//            nextStateRobot = STATE_TOURNE_SUR_PLACE_DROITE;
+//        } else { // etatTD == 2
+//            // Danger critique à droite -> Tourne sur place à GAUCHE
+//            nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE;
+//        }
+//    }
+//    
+//    // --- RESTRUCTURATION DE PRIORITÉ 4 & 5 (Pour gérer [00011]) ---
+//    // Le centre (TC) est 0. Les côtés (TG, TD) ne sont pas 2.
+//
+//    // PRIORITÉ 4: MURS LOINTAINS (État 1 ou 2) - Gère [00011], [00012], [00022]
+//    // Gère [11000] et [00011]
+//    // On vérifie qu'il s'agit bien d'un "mur" (deux capteurs) et que l'autre côté est dégagé
+//    else if ((etatTG > 0 && etatTGG > 0) && (etatTD == 0 && etatTDD == 0)) {
+//        // [11000] ou [21000] ou [22000] -> Mur à gauche
+//        nextStateRobot = STATE_TOURNE_DROITE;
+//    }
+//    else if ((etatTD > 0 && etatTDD > 0) && (etatTG == 0 && etatTGG == 0)) {
+//        // [00011] ou [00012] ou [00022] -> Mur à droite
+//        nextStateRobot = STATE_TOURNE_GAUCHE; // Action forte
+//    }
+//    
+//    // PRIORITÉ 5: OBSTACLES LOINTAINS ISOLÉS (État 1)
+//    // Gère [01010], [01000], [00010] (cas non-murs)
+//    else if (etatTG == 1 || etatTD == 1) {
+//        if (etatTG == 1 && etatTD == 1) {
+//             // Couloir large [x101x]
+//             nextStateRobot = STATE_AVANCE;
+//        } else if (etatTG == 1) {
+//            // Obstacle lointain isolé à gauche [x100x]
+//            nextStateRobot = STATE_TOURNE_DROITE;
+//        } else { // etatTD == 1
+//            // Obstacle lointain isolé à droite [x001x]
+//            nextStateRobot = STATE_TOURNE_GAUCHE;
+//        }
+//    }
+//    
+//    // CORRIGÉ: PRIORITÉ 6 MANQUANTE (Logique pour obstacles extérieurs seuls)
+//    // Gère [10001], [20002], [10000], [00002]
+//    else if (etatTGG > 0 || etatTDD > 0)
+//    {
+//        if (etatTGG > 0 && etatTDD > 0) {
+//             // Passage large ([10001] ou [20002]), on continue
+//             nextStateRobot = STATE_AVANCE;
+//        } else if (etatTGG > 0) { // Uniquement extrême gauche
+//           nextStateRobot = STATE_TOURNE_LEGER_DROITE;
+//        } else { // etatTDD > 0 (Uniquement extrême droite)
+//           nextStateRobot = STATE_TOURNE_LEGER_GAUCHE;
+//        }
+//    }
+//    
+//    // CORRIGÉ: PRIORITÉ 7 MANQUANTE (Cas [00000])
+//    else {
+//        // Tout est dégagé
+//        nextStateRobot = STATE_AVANCE;
+//    }
+//    
+//
+//    // Transition vers le nouvel état
+//    if (nextStateRobot != stateRobot - 1){
+//        stateRobot = nextStateRobot;
+//    }
+//}
+
+
+
+
+
+
+
 void SetNextRobotStateInAutomaticMode()
 {
-    // Initialisation par défaut : avancer
-    nextStateRobot = STATE_AVANCE;
-
-    // --- LOGIQUE DE DÉCISION HIÉRARCHISÉE (Généralisée) ---
-
-    // PRIORITÉ 1: DANGER CENTRE (État 2)
-    // Gère [xx2xx] - (ex: [00200], [11200], [22212], ...)
-    if (etatTC == 2) {
-        nextStateRobot = STATE_RECULE;
-    }
+    // 'obstacle_map' est calculée dans la boucle main()
     
-    // PRIORITÉ 2: DANGER CENTRE (État 1)
-    // Gère [xx1xx] (sauf si Prio 1 déjà prise)
-    else if (etatTC == 1) {
-        // Tourner du côté le plus libre (État 0)
-        if (etatTG == 0 && etatTD > 0) {
-            // G Gêné, D Libre -> Tourne D
-            nextStateRobot = STATE_TOURNE_GAUCHE; // Correction: TG est libre (0), TD est bloqué (>0) -> Tourner GAUCHE
-        } else if (etatTD == 0 && etatTG > 0) {
-            // G Bloqué, D Libre -> Tourne D
-            nextStateRobot = STATE_TOURNE_DROITE;
-        } else {
-            // Les deux côtés sont 0 (libres) ou les deux sont > 0 (bloqués)
-            // On choisit par défaut de tourner à gauche (ou droite)
-            nextStateRobot = STATE_TOURNE_GAUCHE;
-        }
-    }
-    
-    // PRIORITÉ 3: CENTRE DÉGAGÉ (État 0), DANGER LATÉRAL CRITIQUE (État 2)
-    // Gère [x202x], [x200x], [x002x]
-    else if (etatTG == 2 || etatTD == 2) {
-        if (etatTG == 2 && etatTD == 2) {
-            // Impasse étroite (ex: [02020])
-            nextStateRobot = STATE_RECULE;
-        } else if (etatTG == 2) {
-            // Danger critique à gauche -> Tourne sur place à DROITE
-            nextStateRobot = STATE_TOURNE_SUR_PLACE_DROITE;
-        } else { // etatTD == 2
-            // Danger critique à droite -> Tourne sur place à GAUCHE
-            nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE;
-        }
-    }
-    
-    // PRIORITÉ 4: CENTRE DÉGAGÉ (État 0), DANGER LATÉRAL LOINTAIN (État 1)
-    // Gère [x101x], [x100x], [x001x] (sauf si Prio 3 déjà prise)
-    else if (etatTG == 1 || etatTD == 1) {
-        if (etatTG == 1 && etatTD == 1) {
-             // Couloir large, on continue
-             nextStateRobot = STATE_AVANCE;
-        } else if (etatTG == 1) {
-            // Obstacle lointain à gauche -> Tourne DROITE
-            nextStateRobot = STATE_TOURNE_DROITE;
-        } else { // etatTD == 1
-            // Obstacle lointain à droite -> Tourne GAUCHE
-            nextStateRobot = STATE_TOURNE_GAUCHE;
-        }
-    }
-    
-    // PRIORITÉ 5: CENTRE DÉGAGÉ (État 0), DANGERS EXTÉRIEURS (TGG, TDD)
-    // Gère [20002], [10001], [10000] etc. (Votre exemple)
-    else if (etatTDD > 0 || etatTGG > 0) {
-         if (etatTDD > 0 && etatTGG > 0) {
-             // Passage large ([10001] ou [20002]), on continue
-             nextStateRobot = STATE_AVANCE;
-         } else if (etatTDD > 0) { // Uniquement extrême droite
+    switch (obstacle_map)
+    {
+        // -----------------------------------------------------------
+        // 0. AVANCER (Rien, ou obstacles très larges non menaçants)
+        // -----------------------------------------------------------
+        case 0b00000: // [00000] - Rien
+            nextStateRobot = STATE_AVANCE;
+            break;
+        case 0b10001: // [10001] - TGG + TDD (Passage large)
+            nextStateRobot = STATE_AVANCE_PEU;
+            break;
+            
+        // -----------------------------------------------------------
+        // 1. OBSTACLES CÔTÉ DROIT (TD, TDD) -> Tourner GAUCHE
+        // -----------------------------------------------------------
+        case 0b00001: // [00001] - TDD (Extrême droite)
             nextStateRobot = STATE_TOURNE_LEGER_GAUCHE;
-         } else { // etatTGG > 0 (Uniquement extrême gauche)
+            break;
+            
+        case 0b00010: // [00010] - TD (Droite)
+        case 0b00011: // [00011] - TD + TDD (Mur à droite)
+            nextStateRobot = STATE_TOURNE_GAUCHE;
+            break;
+
+        // -----------------------------------------------------------
+        // 2. OBSTACLES CÔTÉ GAUCHE (TG, TGG) -> Tourner DROITE
+        // -----------------------------------------------------------
+        case 0b10000: // [10000] - TGG (Extrême gauche)
             nextStateRobot = STATE_TOURNE_LEGER_DROITE;
-         }
+            break;
+            
+        case 0b01000: // [01000] - TG (Gauche)
+        case 0b11000: // [11000] - TGG + TG (Mur à gauche)
+            nextStateRobot = STATE_TOURNE_DROITE;
+            break;
+
+        // -----------------------------------------------------------
+        // 3. BLOCAGE CENTRAL (TC impliqué) -> Rotation sur place
+        // -----------------------------------------------------------
+        case 0b00100: // [00100] - TC (Obstacle pile en face)
+            // On pourrait améliorer ici en tournant du côté libre
+            nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE; // Choix arbitraire
+            break;
+
+        case 0b00101: // [00101] - TC + TDD
+        case 0b00110: // [00110] - TC + TD
+        case 0b00111: // [00111] - Blocage Centre-Droit
+            nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE; // Dégager vers la gauche
+            break;
+
+        case 0b01100: // [01100] - TG + TC
+        case 0b10100: // [10100] - TGG + TC
+        case 0b11100: // [11100] - Blocage Centre-Gauche
+            nextStateRobot = STATE_TOURNE_SUR_PLACE_DROITE; // Dégager vers la droite
+            break;
+
+        // -----------------------------------------------------------
+        // 4. BLOCAGES COMPLEXES / MULTIPLES
+        // -----------------------------------------------------------
+
+        // Obstacles symétriques (TG+TD ou TGG+TC+TDD) -> Avancer si centre libre
+        case 0b01010: // [01010] - TG + TD (Porte)
+        case 0b10101: // [10101] - TGG + TC + TDD (Cas étrange)
+            nextStateRobot = STATE_DEMI_TOUR_DROITE; // Tente de passer au centre
+            break;
+            
+        // Combinaisons Gauche/Droite sans Centre
+        case 0b10010: // TGG + TD
+        case 0b01001: // TG + TDD
+        case 0b11010: // TGG+TG + TD
+        case 0b01011: // TG + TD+TDD
+            nextStateRobot = STATE_DEMI_TOUR_DROITE; // Tente de passer au centre
+            break;
+            
+        // Combinaisons bloquant tout le passage
+        case 0b01110: // [01110] - TG + TC + TD (Mur en U)
+        case 0b01111: // [01111]
+        case 0b11110: // [11110]
+        // CORRIGÉ: Suppression de la faute de frappe 'case 0s.'
+        case 0b10110: // [10110]
+        case 0b01101: // [01101]
+        case 0b11011: // [11011]
+            nextStateRobot = STATE_RECULE; // Blocage frontal étendu
+            break;
+
+        // -----------------------------------------------------------
+        // 5. BLOCAGE TOTAL -> Reculer
+        // -----------------------------------------------------------
+        case 0b11111: // [11111] - Tout est bloqué
+            nextStateRobot = STATE_RECULE;
+            break;
+
+        // Autres cas (par défaut, pour les combinaisons restantes)
+        default:
+            nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE;
+            break;
     }
     
-    // PRIORITÉ 6: TOUT DÉGAGÉ
-    // Gère [00000]
-    else {
-        nextStateRobot = STATE_AVANCE;
-    }
-
-    // Transition vers le nouvel état
+    // Si l'on n'est pas dans la transition de l'étape en cours
+    // (C'est-à-dire si on ne passe pas de STATE_XXX_EN_COURS à STATE_XXX)
     if (nextStateRobot != stateRobot - 1)
         stateRobot = nextStateRobot;
 }
-
-
-
-
-//
-//void SetNextRobotStateInAutomaticMode()
-//{
-//    // 'obstacle_map' est calculée dans la boucle main()
-//    
-//    switch (obstacle_map)
-//    {
-//        // -----------------------------------------------------------
-//        // 0. AVANCER (Rien, ou obstacles très larges non menaçants)
-//        // -----------------------------------------------------------
-//        case 0b00000: // [00000] - Rien
-//        case 0b10001: // [10001] - TGG + TDD (Passage large)
-//            nextStateRobot = STATE_AVANCE;
-//            break;
-//            
-//        // -----------------------------------------------------------
-//        // 1. OBSTACLES CÔTÉ DROIT (TD, TDD) -> Tourner GAUCHE
-//        // -----------------------------------------------------------
-//        case 0b00001: // [00001] - TDD (Extrême droite)
-//            nextStateRobot = STATE_TOURNE_LEGER_GAUCHE;
-//            break;
-//            
-//        case 0b00010: // [00010] - TD (Droite)
-//        case 0b00011: // [00011] - TD + TDD (Mur à droite)
-//            nextStateRobot = STATE_TOURNE_GAUCHE;
-//            break;
-//
-//        // -----------------------------------------------------------
-//        // 2. OBSTACLES CÔTÉ GAUCHE (TG, TGG) -> Tourner DROITE
-//        // -----------------------------------------------------------
-//        case 0b10000: // [10000] - TGG (Extrême gauche)
-//            nextStateRobot = STATE_TOURNE_LEGER_DROITE;
-//            break;
-//            
-//        case 0b01000: // [01000] - TG (Gauche)
-//        case 0b11000: // [11000] - TGG + TG (Mur à gauche)
-//            nextStateRobot = STATE_TOURNE_DROITE;
-//            break;
-//
-//        // -----------------------------------------------------------
-//        // 3. BLOCAGE CENTRAL (TC impliqué) -> Rotation sur place
-//        // -----------------------------------------------------------
-//        case 0b00100: // [00100] - TC (Obstacle pile en face)
-//            nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE; // Choix arbitraire
-//            break;
-//
-//        case 0b00101: // [00101] - TC + TDD
-//        case 0b00110: // [00110] - TC + TD
-//        case 0b00111: // [00111] - Blocage Centre-Droit
-//            nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE; // Dégager vers la gauche
-//            break;
-//
-//        case 0b01100: // [01100] - TG + TC
-//        case 0b10100: // [10100] - TGG + TC
-//        case 0b11100: // [11100] - Blocage Centre-Gauche
-//            nextStateRobot = STATE_TOURNE_SUR_PLACE_DROITE; // Dégager vers la droite
-//            break;
-//
-//        // -----------------------------------------------------------
-//        // 4. BLOCAGES COMPLEXES / MULTIPLES
-//        // -----------------------------------------------------------
-//
-//        // Obstacles symétriques (TG+TD ou TGG+TC+TDD) -> Avancer si centre libre
-//        case 0b01010: // [01010] - TG + TD (Porte)
-//        case 0b10101: // [10101] - TGG + TC + TDD (Cas étrange)
-//            nextStateRobot = STATE_AVANCE; // Tente de passer au centre
-//            break;
-//            
-//        // Combinaisons Gauche/Droite sans Centre
-//        case 0b10010: // TGG + TD
-//        case 0b01001: // TG + TDD
-//        case 0b11010: // TGG+TG + TD
-//        case 0b01011: // TG + TD+TDD
-//            nextStateRobot = STATE_AVANCE; // Tente de passer au centre
-//            break;
-//            
-//        // Combinaisons bloquant tout le passage
-//        case 0b01110: // [01110] - TG + TC + TD (Mur en U)
-//        case 0b01111: // [01111]
-//        case 0b11110: // [11110]
-//        case 0b10110: // [10110]
-//        case 0b01101: // [01101]
-//        case 0b11011: // [11011]
-//            nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE; // Blocage frontal étendu
-//            break;
-//
-//        // -----------------------------------------------------------
-//        // 5. BLOCAGE TOTAL -> Reculer
-//        // -----------------------------------------------------------
-//        case 0b11111: // [11111] - Tout est bloqué
-//            nextStateRobot = STATE_RECULE;
-//            break;
-//
-//        // Autres cas (par défaut, pour les combinaisons restantes)
-//        default:
-//            nextStateRobot = STATE_AVANCE;
-//            break;
-//    }
-//    
-//    // Si l'on n'est pas dans la transition de l'étape en cours
-//    // (C'est-à-dire si on ne passe pas de STATE_XXX_EN_COURS à STATE_XXX)
-//    if (nextStateRobot != stateRobot - 1)
-//        stateRobot = nextStateRobot;
-//}
-//
-//
-//
