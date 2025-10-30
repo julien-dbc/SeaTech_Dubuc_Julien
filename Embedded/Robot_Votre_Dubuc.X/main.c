@@ -21,7 +21,8 @@ unsigned char robot_is_running = 0; // 0: Arrêté / 1: En cours d'exécution
 unsigned char obstacle_map = 0;
 
 unsigned char recul_counter =0;
-
+unsigned char consecutive_left_turns = 0;
+unsigned char consecutive_right_turns = 0;
 
 void StopRobotCompletely(void) {
     // Arrête les moteurs
@@ -114,22 +115,22 @@ int main(void) {
         
         // Affichage des LEDs (comme dans votre code original)
 
-        LED_ORANGE_1 = (robotState.distanceTelemetreCentre > OBSTACLE_THRESHOLD);
+        LED_ORANGE_1 = (robotState.distanceTelemetreCentre > OBSTACLE_THRESHOLD1);
 
         LED_BLEUE_1 = (robotState.distanceTelemetreGauche > OBSTACLE_THRESHOLD);
 
-        LED_BLANCHE_1 = (robotState.distanceTelemetreGaucheGauche > OBSTACLE_THRESHOLD);
+        LED_BLANCHE_1 = (robotState.distanceTelemetreGaucheGauche > OBSTACLE_THRESHOLD2);
 
         LED_ROUGE_1 = (robotState.distanceTelemetreDroit > OBSTACLE_THRESHOLD);
 
-        LED_VERTE_1 = (robotState.distanceTelemetreDroiteDroite > OBSTACLE_THRESHOLD);
+        LED_VERTE_1 = (robotState.distanceTelemetreDroiteDroite > OBSTACLE_THRESHOLD2);
         
 
     }
     
-    while (1) {
-
-    }
+//    while (1) {
+//
+//    }
 
 }   
     
@@ -139,173 +140,405 @@ int main(void) {
 
 void OperatingSystemLoop(void)
 {
-switch (stateRobot)
-{
-case STATE_ATTENTE:
-timestamp = 0;
-PWMSetSpeedConsigne(0, MOTEUR_DROIT);
-PWMSetSpeedConsigne(0, MOTEUR_GAUCHE);
-stateRobot = STATE_ATTENTE_EN_COURS;
-break; // CORRIGÉ: Ajout du break manquant
+    // Durées minimales (en ticks/ms) pour les actions.
+    // (J'utilise les nouvelles valeurs que vous avez fournies)
+    const unsigned int DUREE_RECUL = 40;
+    const unsigned int DUREE_ROTATION_LEGERE = 15;
+    const unsigned int DUREE_ROTATION_PRONONCEE = 15;
+    const unsigned int DUREE_ROTATION_SUR_PLACE = 25;
+    const unsigned int DUREE_DEMI_TOUR = 160; 
 
-case STATE_ATTENTE_EN_COURS:
-if (timestamp > 1000)
-stateRobot = STATE_AVANCE;
-break;
+    switch (stateRobot)
+    {
+    case STATE_ATTENTE:
+        timestamp = 0;
+        PWMSetSpeedConsigne(0, MOTEUR_DROIT);
+        PWMSetSpeedConsigne(0, MOTEUR_GAUCHE);
+        stateRobot = STATE_ATTENTE_EN_COURS;
+        break; 
 
-case STATE_AVANCE:
-PWMSetSpeedConsigne(35, MOTEUR_DROIT);
-PWMSetSpeedConsigne(35, MOTEUR_GAUCHE);
-stateRobot = STATE_AVANCE_EN_COURS;
-break;
+    case STATE_ATTENTE_EN_COURS:
+        if (timestamp > 1000)
+            stateRobot = STATE_AVANCE;
+        break;
 
-case STATE_AVANCE_EN_COURS:
-SetNextRobotStateInAutomaticMode();
-break;
+    case STATE_AVANCE:
+        PWMSetSpeedConsigne(35, MOTEUR_DROIT);
+        PWMSetSpeedConsigne(35, MOTEUR_GAUCHE);
+        stateRobot = STATE_AVANCE_EN_COURS;
+        // <--- Logique anti-toupis: reset des compteurs
+        consecutive_left_turns = 0;  
+        consecutive_right_turns = 0;
+        break;
 
-case STATE_AVANCE_PEU:
-PWMSetSpeedConsigne(20, MOTEUR_DROIT);
-PWMSetSpeedConsigne(20, MOTEUR_GAUCHE);
-stateRobot = STATE_AVANCE_PEU_COURS;
-break;
+    case STATE_AVANCE_EN_COURS:
+        SetNextRobotStateInAutomaticMode();
+        break;
 
-case STATE_AVANCE_PEU_COURS:
-SetNextRobotStateInAutomaticMode();
-break;
+    case STATE_AVANCE_PEU:
+        PWMSetSpeedConsigne(20, MOTEUR_DROIT);
+        PWMSetSpeedConsigne(20, MOTEUR_GAUCHE);
+        stateRobot = STATE_AVANCE_PEU_COURS;
+        // <--- Logique anti-toupis: reset des compteurs
+        consecutive_left_turns = 0;  
+        consecutive_right_turns = 0;       
+        break;
 
-case STATE_TOURNE_GAUCHE:
-PWMSetSpeedConsigne(30, MOTEUR_DROIT);
-PWMSetSpeedConsigne(20, MOTEUR_GAUCHE); // Courbe prononcée
-stateRobot = STATE_TOURNE_GAUCHE_EN_COURS;
-break;
+    case STATE_AVANCE_PEU_COURS:
+        SetNextRobotStateInAutomaticMode();
+        break;
 
-case STATE_TOURNE_LEGER_GAUCHE:
-PWMSetSpeedConsigne(30, MOTEUR_DROIT);
-PWMSetSpeedConsigne(25, MOTEUR_GAUCHE); // Courbe légère
-stateRobot = STATE_TOURNE_LEGER_GAUCHE_EN_COURS;
-break;
+    // --- ROTATIONS GAUCHE (AVEC ANTI-TOUPIS) ---
+        
+        
+        
+       
+//case STATE_TOURNE_GAUCHE:
+//        consecutive_left_turns++;
+//        consecutive_right_turns = 0;
+//        
+//        if (consecutive_left_turns > MAX_CONSECUTIVE_TURNS) {
+//            stateRobot = STATE_DEMI_TOUR_DROITE; 
+//            consecutive_left_turns = 0; 
+//        } else {
+//            
+//            const float MAX_DIST_DETECT = 150.0;
+//            const float VITESSE_AJUSTEMENT = 20.0; // Intensité de la rotation
+//            const float VITESSE_BASE = 30.0;       // Vitesse d'avancée de base
+//            
+//            float distance = robotState.distanceTelemetreDroit;
+//            if (distance < 0.0) {
+//                distance = 0.0;
+//            }
+//            float i = distance / MAX_DIST_DETECT; 
+//            float j = (1.0 - i) * VITESSE_AJUSTEMENT; 
+//            
+//
+//            PWMSetSpeedConsigne(VITESSE_BASE + j, MOTEUR_DROIT); 
+//            PWMSetSpeedConsigne(VITESSE_BASE - j, MOTEUR_GAUCHE); 
+//            
+//            timestamp = 0; 
+//            stateRobot = STATE_TOURNE_GAUCHE_EN_COURS;
+//        }
+//        break;    
+        
+        
+        
+        
+        
+        
+        
+    case STATE_TOURNE_GAUCHE:
+        consecutive_left_turns++;
+        //consecutive_right_turns = 0;
+        
+        if (consecutive_left_turns > MAX_CONSECUTIVE_TURNS) {
+            stateRobot = STATE_DEMI_TOUR_DROITE; // Man?uvre d'évasion
+            consecutive_left_turns = 0; // On réinitialise
+        } else {
+            PWMSetSpeedConsigne(20, MOTEUR_DROIT);
+            PWMSetSpeedConsigne(5, MOTEUR_GAUCHE); 
+            timestamp = 0; 
+            stateRobot = STATE_TOURNE_GAUCHE_EN_COURS;
+        }
+        break;
+        
+        
+        
+        
+    // <--- CORRECTION: État d'attente ré-intégré
+    case STATE_TOURNE_GAUCHE_EN_COURS:
+        if (timestamp > DUREE_ROTATION_PRONONCEE)
+        {
+            SetNextRobotStateInAutomaticMode(); // On réévalue APRES avoir tourné
+        }
+        break;
 
-case STATE_TOURNE_LEGER_GAUCHE_EN_COURS:
-// CORRIGÉ: Forcer la rotation pendant X ms avant de réévaluer
-SetNextRobotStateInAutomaticMode();
-break;
+        
+        
+//        case STATE_TOURNE_LEGER_GAUCHE:
+//        consecutive_left_turns++;
+//        consecutive_right_turns = 0;
+//        
+//        if (consecutive_left_turns > MAX_CONSECUTIVE_TURNS) {
+//            stateRobot = STATE_DEMI_TOUR_DROITE; 
+//            consecutive_left_turns = 0;
+//        } else {
+//            
+//            const float MAX_DIST_DETECT = 150.0;
+//            const float VITESSE_AJUSTEMENT = 20.0; // Intensité de la rotation
+//            const float VITESSE_BASE = 15.0;       // Vitesse d'avancée de base
+//            
+//            float distance = robotState.distanceTelemetreDroiteDroite;
+//            if (distance < 0.0) {
+//                distance = 0.0;
+//            }
+//            float i = distance / MAX_DIST_DETECT; 
+//            float j = (1.0 - i) * VITESSE_AJUSTEMENT; 
+//            
+//
+//            PWMSetSpeedConsigne(VITESSE_BASE - j, MOTEUR_DROIT); 
+//            PWMSetSpeedConsigne(VITESSE_BASE + j, MOTEUR_GAUCHE); 
+//            
+//            timestamp = 0; 
+//            stateRobot = STATE_TOURNE_LEGER_GAUCHE;
+//        }
+//        break; 
+        
+   
+        
+        
+    case STATE_TOURNE_LEGER_GAUCHE:
+        consecutive_left_turns++;
+        //consecutive_right_turns = 0;
+        
+        if (consecutive_left_turns > MAX_CONSECUTIVE_TURNS) {
+            stateRobot = STATE_DEMI_TOUR_DROITE; 
+            consecutive_left_turns = 0;
+        } else {
+            PWMSetSpeedConsigne(30, MOTEUR_DROIT);
+            PWMSetSpeedConsigne(20, MOTEUR_GAUCHE);
+            timestamp = 0; 
+            stateRobot = STATE_TOURNE_LEGER_GAUCHE_EN_COURS;
+        }
+        break;
 
-case STATE_TOURNE_GAUCHE_EN_COURS:
-// CORRIGÉ: Forcer la rotation pendant X ms avant de réévaluer
-SetNextRobotStateInAutomaticMode();
-break;
+        
+        
+        
+        
+    // <--- CORRECTION: État d'attente ré-intégré
+    case STATE_TOURNE_LEGER_GAUCHE_EN_COURS:
+        if (timestamp > DUREE_ROTATION_LEGERE)
+        {
+            SetNextRobotStateInAutomaticMode();
+        }
+        break;
 
-case STATE_TOURNE_LEGER_DROITE:
-PWMSetSpeedConsigne(25, MOTEUR_DROIT);
-PWMSetSpeedConsigne(30, MOTEUR_GAUCHE); // Courbe légère
-stateRobot = STATE_TOURNE_LEGER_DROITE_EN_COURS;
-break;
+    case STATE_TOURNE_SUR_PLACE_GAUCHE:
+        consecutive_left_turns++;
+        //consecutive_right_turns = 0;
+        
+        if (consecutive_left_turns > MAX_CONSECUTIVE_TURNS) {
+            stateRobot = STATE_DEMI_TOUR_DROITE; 
+            consecutive_left_turns = 0;
+        } else {
+            PWMSetSpeedConsigne(15, MOTEUR_DROIT);
+            PWMSetSpeedConsigne(-15, MOTEUR_GAUCHE);
+            timestamp = 0; 
+            stateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE_EN_COURS;
+        }
+        break;
 
-case STATE_TOURNE_LEGER_DROITE_EN_COURS:
-// CORRIGÉ: Forcer la rotation pendant X ms avant de réévaluer
-SetNextRobotStateInAutomaticMode();
+    // <--- CORRECTION: État d'attente ré-intégré
+    case STATE_TOURNE_SUR_PLACE_GAUCHE_EN_COURS:
+        if (timestamp > DUREE_ROTATION_SUR_PLACE)
+        {
+            SetNextRobotStateInAutomaticMode();
+        }
+        break;
 
-break;
+    // --- ROTATIONS DROITE (AVEC ANTI-TOUPIS) ---
 
-case STATE_TOURNE_DROITE:
-PWMSetSpeedConsigne(20, MOTEUR_DROIT);
-PWMSetSpeedConsigne(30, MOTEUR_GAUCHE); // Courbe prononcée
-stateRobot = STATE_TOURNE_DROITE_EN_COURS;
-break;
+//    case STATE_TOURNE_LEGER_DROITE:
+//        consecutive_right_turns++;
+//        consecutive_left_turns = 0;
+//        
+//        if (consecutive_right_turns > MAX_CONSECUTIVE_TURNS) {
+//            stateRobot = STATE_DEMI_TOUR_DROITE; // Man?uvre d'évasion
+//            consecutive_right_turns = 0; 
+//        } else {
+//            
+//            const float MAX_DIST_DETECT = 150.0;
+//            const float VITESSE_AJUSTEMENT = 20.0; // Intensité de la rotation
+//            const float VITESSE_BASE = 15.0;       // Vitesse d'avancée de base
+//            
+//            float distance = robotState.distanceTelemetreGaucheGauche;
+//            if (distance < 0.0) {
+//                distance = 0.0;
+//            }
+//            float i = distance / MAX_DIST_DETECT; 
+//            float j = (1.0 - i) * VITESSE_AJUSTEMENT; 
+//            
+//
+//            PWMSetSpeedConsigne(VITESSE_BASE - j, MOTEUR_DROIT); 
+//            PWMSetSpeedConsigne(VITESSE_BASE + j, MOTEUR_GAUCHE); 
+//            
+//            timestamp = 0; 
+//            stateRobot = STATE_TOURNE_LEGER_DROITE_EN_COURS;
+//        }
+//        break;        
+        
+        
+    case STATE_TOURNE_LEGER_DROITE:
+        consecutive_right_turns++;
+        //consecutive_left_turns = 0;
+        
+        if (consecutive_right_turns > MAX_CONSECUTIVE_TURNS) {
+            stateRobot = STATE_DEMI_TOUR_DROITE; // Man?uvre d'évasion
+            consecutive_right_turns = 0; 
+        } else {
+            PWMSetSpeedConsigne(20, MOTEUR_DROIT);
+            PWMSetSpeedConsigne(30, MOTEUR_GAUCHE);
+            timestamp = 0; 
+            stateRobot = STATE_TOURNE_LEGER_DROITE_EN_COURS;
+        }
+        break;
 
-case STATE_TOURNE_DROITE_EN_COURS:
-// CORRIGÉ: Forcer la rotation pendant X ms avant de réévaluer
-SetNextRobotStateInAutomaticMode();
-break;
+    // <--- CORRECTION: État d'attente ré-intégré
+    case STATE_TOURNE_LEGER_DROITE_EN_COURS:
+        if (timestamp > DUREE_ROTATION_LEGERE)
+        {
+            SetNextRobotStateInAutomaticMode();
+        }
+        break;
 
-case STATE_TOURNE_SUR_PLACE_GAUCHE:
-// MODIFIÉ: Augmentation de la vitesse de spin (2, -2 est trop faible)
-PWMSetSpeedConsigne(15, MOTEUR_DROIT);
-PWMSetSpeedConsigne(-15, MOTEUR_GAUCHE);
-stateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE_EN_COURS;
-break;
+        
+        
+//    case STATE_TOURNE_DROITE:
+//        consecutive_right_turns++;
+//        consecutive_left_turns = 0;
+//        
+//        if (consecutive_right_turns > MAX_CONSECUTIVE_TURNS) {
+//            stateRobot = STATE_DEMI_TOUR_DROITE;
+//            consecutive_right_turns = 0;
+//        } else {
+//            
+//            const float MAX_DIST_DETECT = 150.0;
+//            const float VITESSE_AJUSTEMENT = 15.0; // Intensité de la rotation
+//            const float VITESSE_BASE = 30.0;       // Vitesse d'avancée de base
+//            
+//            float distance = robotState.distanceTelemetreGauche;
+//            if (distance < 0.0) {
+//                distance = 0.0;
+//            }
+//            float i = distance / MAX_DIST_DETECT; 
+//            float j = (1.0 - i) * VITESSE_AJUSTEMENT; 
+//            
+//
+//            PWMSetSpeedConsigne(VITESSE_BASE - j, MOTEUR_DROIT); 
+//            PWMSetSpeedConsigne(VITESSE_BASE + j, MOTEUR_GAUCHE); 
+//            
+//            timestamp = 0; 
+//            stateRobot = STATE_TOURNE_DROITE_EN_COURS;
+//        }
+//        break;         
+        
 
-case STATE_TOURNE_SUR_PLACE_GAUCHE_EN_COURS:
-// CORRIGÉ: Forcer la rotation pendant X ms avant de réévaluer
-SetNextRobotStateInAutomaticMode();
-break;
+    case STATE_TOURNE_DROITE:
+        consecutive_right_turns++;
+        //consecutive_left_turns = 0;
+        
+        if (consecutive_right_turns > MAX_CONSECUTIVE_TURNS) {
+            stateRobot = STATE_DEMI_TOUR_DROITE;
+            consecutive_right_turns = 0;
+        } else {
+            PWMSetSpeedConsigne(5, MOTEUR_DROIT);
+            PWMSetSpeedConsigne(20, MOTEUR_GAUCHE);
+            timestamp = 0; 
+            stateRobot = STATE_TOURNE_DROITE_EN_COURS;
+        }
+        break;
+        
+        
+        
+        
+        
+    // <--- CORRECTION: État d'attente ré-intégré
+    case STATE_TOURNE_DROITE_EN_COURS:
+        if (timestamp > DUREE_ROTATION_PRONONCEE)
+        {
+            SetNextRobotStateInAutomaticMode();
+        }
+        break;
 
-case STATE_TOURNE_SUR_PLACE_DROITE:
-// MODIFIÉ: Augmentation de la vitesse de spin
-PWMSetSpeedConsigne(-15, MOTEUR_DROIT);
-PWMSetSpeedConsigne(15, MOTEUR_GAUCHE);
-stateRobot = STATE_TOURNE_SUR_PLACE_DROITE_EN_COURS;
-break;
+    case STATE_TOURNE_SUR_PLACE_DROITE:
+        consecutive_right_turns++;
+        //consecutive_left_turns = 0;
+        
+        if (consecutive_right_turns > MAX_CONSECUTIVE_TURNS) {
+            stateRobot = STATE_DEMI_TOUR_DROITE;
+            consecutive_right_turns = 0;
+        } else {
+            PWMSetSpeedConsigne(-15, MOTEUR_DROIT);
+            PWMSetSpeedConsigne(15, MOTEUR_GAUCHE);
+            timestamp = 0; 
+            stateRobot = STATE_TOURNE_SUR_PLACE_DROITE_EN_COURS;
+        }
+        break;
 
-case STATE_TOURNE_SUR_PLACE_DROITE_EN_COURS:
-// CORRIGÉ: Forcer la rotation pendant X ms avant de réévaluer
-SetNextRobotStateInAutomaticMode();
-break;
+    // <--- CORRECTION: État d'attente ré-intégré
+    case STATE_TOURNE_SUR_PLACE_DROITE_EN_COURS:
+        if (timestamp > DUREE_ROTATION_SUR_PLACE)
+        {
+            SetNextRobotStateInAutomaticMode();
+        }
+        break;
+        
+    // --- AUTRES ETATS ---
 
-case STATE_ARRET:
-PWMSetSpeedConsigne(0, MOTEUR_DROIT);
-PWMSetSpeedConsigne(0, MOTEUR_GAUCHE);
-stateRobot = STATE_ARRET_EN_COURS;
-break;
+    case STATE_ARRET:
+        PWMSetSpeedConsigne(-3, MOTEUR_DROIT);
+        PWMSetSpeedConsigne(-3, MOTEUR_GAUCHE);
+        stateRobot = STATE_ARRET_EN_COURS;
+        break;
 
-case STATE_ARRET_EN_COURS:
-SetNextRobotStateInAutomaticMode();
-break;
+    case STATE_ARRET_EN_COURS:
+        SetNextRobotStateInAutomaticMode();
+        break;
 
-case STATE_RECULE:
-PWMSetSpeedConsigne(-20, MOTEUR_DROIT);
-PWMSetSpeedConsigne(-20, MOTEUR_GAUCHE);
-timestamp = 0; // On réinitialise le timer quand on COMMENCE à reculer
-recul_counter++; 
-stateRobot = STATE_RECULE_EN_COURS;
-break;
+    case STATE_RECULE:
+        PWMSetSpeedConsigne(-20, MOTEUR_DROIT);
+        PWMSetSpeedConsigne(-20, MOTEUR_GAUCHE);
+        timestamp = 0; 
+        recul_counter++; 
+        // <--- Logique anti-toupis: reset des compteurs
+        consecutive_left_turns = 0;  
+        consecutive_right_turns = 0;
+        stateRobot = STATE_RECULE_EN_COURS;
+        break;
 
-case STATE_RECULE_EN_COURS:
-// CORRIGÉ: Suppression du timer 'if (timestamp > 400)'
-// La décision est prise immédiatement (après 1-2ms de recul)
+    case STATE_RECULE_EN_COURS:
+        // Attendre d'avoir physiquement reculé avant de tourner
+        if (timestamp > DUREE_RECUL) 
+        {
+            // Logique 1-sur-2
+            if (recul_counter % 3 == 0) 
+            {
+                stateRobot = STATE_DEMI_TOUR_DROITE; 
+            }
+            else 
+            {
+                if (robotState.distanceTelemetreGauche > robotState.distanceTelemetreDroit) {
+                    stateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE;
+                } else {
+                    stateRobot = STATE_TOURNE_SUR_PLACE_DROITE;
+                }
+            }
+        }
+        break; 
 
-// Logique 1-sur-15
-if (recul_counter % 3 == 0) 
-{
-// CAS 1/15: On force un demi-tour complet
-stateRobot = STATE_DEMI_TOUR_DROITE; 
+    case STATE_DEMI_TOUR_DROITE:
+//        consecutive_left_turns = 0;  
+//        consecutive_right_turns = 0;
+        PWMSetSpeedConsigne(-20, MOTEUR_DROIT);
+        PWMSetSpeedConsigne(20, MOTEUR_GAUCHE);
+        timestamp = 0; 
+        stateRobot = STATE_DEMI_TOUR_DROITE_EN_COURS;
+        break;
+
+    case STATE_DEMI_TOUR_DROITE_EN_COURS:
+        if (timestamp > DUREE_DEMI_TOUR) 
+        {
+            stateRobot = STATE_AVANCE;
+        }
+        break;
+
+    default :
+        stateRobot = STATE_ATTENTE;
+        break;
+    }
 }
-else 
-{
-// CAS 14/15: Rotation "intelligente"
-if (robotState.distanceTelemetreGauche > robotState.distanceTelemetreDroit) {
-stateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE; // Plus d'espace à gauche
-} else {
-stateRobot = STATE_TOURNE_SUR_PLACE_DROITE; // Plus d'espace à droite (ou égalité)
-}
-}
-// CORRIGÉ: Suppression de l'accolade en trop (syntax error)
-break;
-
-// --- NOUVEAUX ÉTATS POUR LE DEMI-TOUR ---
-case STATE_DEMI_TOUR_DROITE:
-// Lancement de la rotation sur place (vitesse rapide OK ici)
-PWMSetSpeedConsigne(-20, MOTEUR_DROIT);
-PWMSetSpeedConsigne(20, MOTEUR_GAUCHE);
-timestamp = 0; // Démarrage du timer pour la durée du demi-tour
-stateRobot = STATE_DEMI_TOUR_DROITE_EN_COURS;
-break;
-
-case STATE_DEMI_TOUR_DROITE_EN_COURS:
-if (timestamp > 100) 
-{
-// Le demi-tour est terminé.
-stateRobot = STATE_AVANCE;
-}
-break;
-
-default :
-stateRobot = STATE_ATTENTE;
-break;
-}
-}
-
-
 
 unsigned char nextStateRobot=0;
 
@@ -470,9 +703,24 @@ void SetNextRobotStateInAutomaticMode()
         // 3. BLOCAGE CENTRAL (TC impliqué) -> Rotation sur place
         // -----------------------------------------------------------
         case 0b00100: // [00100] - TC (Obstacle pile en face)
-            // On pourrait améliorer ici en tournant du côté libre
-            nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE; // Choix arbitraire
-            break;
+        
+        // Les deux côtés sont "libres" (obstacle_map == 0)
+        // On vérifie quel côté a LE PLUS d'espace réel.
+        if (robotState.distanceTelemetreGauche > robotState.distanceTelemetreDroit) 
+        {
+            // Plus d'espace à gauche -> On tourne à GAUCHE
+            nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE;
+        } 
+        else if (robotState.distanceTelemetreGauche < robotState.distanceTelemetreDroit)  
+        {
+            // Plus d'espace à droite (ou égalité) -> On tourne à DROITE
+            nextStateRobot = STATE_TOURNE_SUR_PLACE_DROITE;
+        }else
+        {
+            nextStateRobot = STATE_DEMI_TOUR_DROITE;
+
+        }
+        break;
 
         case 0b00101: // [00101] - TC + TDD
         case 0b00110: // [00110] - TC + TD
@@ -493,7 +741,7 @@ void SetNextRobotStateInAutomaticMode()
         // Obstacles symétriques (TG+TD ou TGG+TC+TDD) -> Avancer si centre libre
         case 0b01010: // [01010] - TG + TD (Porte)
         case 0b10101: // [10101] - TGG + TC + TDD (Cas étrange)
-            nextStateRobot = STATE_DEMI_TOUR_DROITE; // Tente de passer au centre
+            nextStateRobot = STATE_RECULE; //STATE_DEMI_TOUR_DROITE; // Tente de passer au centre
             break;
             
         // Combinaisons Gauche/Droite sans Centre
@@ -501,7 +749,7 @@ void SetNextRobotStateInAutomaticMode()
         case 0b01001: // TG + TDD
         case 0b11010: // TGG+TG + TD
         case 0b01011: // TG + TD+TDD
-            nextStateRobot = STATE_DEMI_TOUR_DROITE; // Tente de passer au centre
+            nextStateRobot = STATE_RECULE; //STATE_DEMI_TOUR_DROITE; // Tente de passer au centre
             break;
             
         // Combinaisons bloquant tout le passage

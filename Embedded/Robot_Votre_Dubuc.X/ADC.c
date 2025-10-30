@@ -31,7 +31,7 @@ void InitADC1(void) {
     //AD1CON3 Horloge de conversion
     /************************************************************/
     AD1CON3bits.ADRC = 0; // ADC Clock is derived from Systems Clock
-    AD1CON3bits.ADCS = 15; // ADC Conversion Clock TAD = TCY * (ADCS + 1)
+    AD1CON3bits.ADCS = 8; // ADC Conversion Clock TAD = TCY * (ADCS + 1)
     AD1CON3bits.SAMC = 15; // Auto Sample Time
     /************************************************************/
     //AD1CON4 DMA (non utilisé ici)

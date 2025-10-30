@@ -64,7 +64,9 @@ void StopRobotCompletely(void);
 
 #define OBSTACLE_THRESHOLD 30.0f
 #define OBSTACLE_THRESHOLD1 45.0f
-#define OBSTACLE_THRESHOLD2 25.0f
+#define OBSTACLE_THRESHOLD2 20.0f
+    
+#define OBSTACLE_THRESHOLD3 170.0f
 
-
+#define MAX_CONSECUTIVE_TURNS 10
 #endif	/* MAIN_H */
