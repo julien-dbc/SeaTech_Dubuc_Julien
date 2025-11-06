@@ -62,9 +62,9 @@ void StopRobotCompletely(void);
 
 
 
-#define OBSTACLE_THRESHOLD 30.0f
-#define OBSTACLE_THRESHOLD1 45.0f
-#define OBSTACLE_THRESHOLD2 20.0f
+//#define OBSTACLE_THRESHOLD //30.0f
+//#define OBSTACLE_THRESHOLD1 //45.0f
+//#define OBSTACLE_THRESHOLD2 //20.0f
     
 #define OBSTACLE_THRESHOLD3 170.0f
 

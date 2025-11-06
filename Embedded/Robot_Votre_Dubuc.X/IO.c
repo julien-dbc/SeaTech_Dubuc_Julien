@@ -38,7 +38,7 @@ void InitIO()
     // Configuration des entrées
     //Bouton 
     _TRISH1 = 0;     // Configure RG6 en entrée
- 
+    _TRISH2 = 0;
     
 
     /****************************************************************************************************/

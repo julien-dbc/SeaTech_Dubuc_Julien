@@ -21,7 +21,7 @@ void InitTimer1(void) {
     IEC0bits.T1IE = 1; // Enable Timer interrupt
     T1CONbits.TON = 1; // Enable Timer
     
-    SetFreqTimer1(100);
+    SetFreqTimer1(10000);
 }
 //Interruption du timer 1
 
@@ -99,14 +99,14 @@ void InitTimer4(void) {
     IEC1bits.T4IE = 1; // Enable Timer interrupt
     T4CONbits.TON = 1; // Enable Timer
     
-    SetFreqTimer4(50000);
+    SetFreqTimer4(500);
 }
 //Interruption du timer 1
 
 void __attribute__((interrupt, no_auto_psv)) _T4Interrupt(void) {
     IFS1bits.T4IF = 0;
     //LED_BLANCHE_1 = !LED_BLANCHE_1;
-    LED_VERTE_2 = ! LED_VERTE_2;
+    // LED_VERTE_2 = ! LED_VERTE_2;
     timestamp+=1;
     t1+=1;
     //ADC1StartConversionSequence();
@@ -126,16 +126,16 @@ void SetFreqTimer4(float freq)
             if(FCY /freq / 64 > 65535)
             {
                 T4CONbits.TCKPS = 0b11; //11 = 1:256 prescaler value
-                PR1 = (int)(FCY / freq / 256);
+                PR4 = (int)(FCY / freq / 256);
             }
             else
-                PR1 = (int)(FCY / freq / 64);
+                PR4 = (int)(FCY / freq / 64);
         }
         else
-            PR1 = (int)(FCY / freq / 8);
+            PR4 = (int)(FCY / freq / 8);
     }
     else
-        PR1 = (int)(FCY / freq);
+        PR4 = (int)(FCY / freq);
 }
 
 
