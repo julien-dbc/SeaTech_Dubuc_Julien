@@ -176,7 +176,7 @@ void OperatingSystemLoop(void)
     const unsigned int DUREE_ROTATION_LEGERE = 5;     // Ancien: 15
     const unsigned int DUREE_ROTATION_PRONONCEE = 7;  // Ancien: 15
     const unsigned int DUREE_ROTATION_SUR_PLACE = 12; // Ancien: 25
-    const unsigned int DUREE_DEMI_TOUR = 30; 
+    const unsigned int DUREE_DEMI_TOUR = 15; 
 
     switch (stateRobot)
     {
@@ -230,8 +230,8 @@ void OperatingSystemLoop(void)
             stateRobot = STATE_DEMI_TOUR_DROITE; // Man?uvre d'évasion
             consecutive_left_turns = 0; // On réinitialise
         } else {
-            PWMSetSpeedConsigne(20, MOTEUR_DROIT);
-            PWMSetSpeedConsigne(5, MOTEUR_GAUCHE); 
+            PWMSetSpeedConsigne(30, MOTEUR_DROIT);
+            PWMSetSpeedConsigne(10, MOTEUR_GAUCHE); 
             timestamp = 0; 
             stateRobot = STATE_TOURNE_GAUCHE_EN_COURS;
         }
@@ -346,8 +346,8 @@ void OperatingSystemLoop(void)
             stateRobot = STATE_DEMI_TOUR_DROITE;
             consecutive_right_turns = 0;
         } else {
-            PWMSetSpeedConsigne(5, MOTEUR_DROIT);
-            PWMSetSpeedConsigne(20, MOTEUR_GAUCHE);
+            PWMSetSpeedConsigne(10, MOTEUR_DROIT);
+            PWMSetSpeedConsigne(30, MOTEUR_GAUCHE);
             timestamp = 0; 
             stateRobot = STATE_TOURNE_DROITE_EN_COURS;
         }
@@ -394,16 +394,16 @@ void OperatingSystemLoop(void)
         
     // --- AUTRES ETATS ---
 
-    case STATE_ARRET:
-        PWMSetSpeedConsigne(-3, MOTEUR_DROIT);
-        PWMSetSpeedConsigne(-3, MOTEUR_GAUCHE);
-        stateRobot = STATE_ARRET_EN_COURS;
-        break;
-
-    case STATE_ARRET_EN_COURS:
-        //SetNextRobotStateInAutomaticMode();
-        pfn_SetNextRobotState();
-        break;
+//    case STATE_ARRET:
+//        PWMSetSpeedConsigne(-5, MOTEUR_DROIT);
+//        PWMSetSpeedConsigne(-5, MOTEUR_GAUCHE);
+//        stateRobot = STATE_ARRET_EN_COURS;
+//        break;
+//
+//    case STATE_ARRET_EN_COURS:
+//        //SetNextRobotStateInAutomaticMode();
+//        pfn_SetNextRobotState();
+//        break;
 
     case STATE_RECULE:
         PWMSetSpeedConsigne(-20, MOTEUR_DROIT);
@@ -657,7 +657,7 @@ void SetNextRobotStateInAutomaticMode()
     if (nextStateRobot == STATE_RECULE) stuck_score += 10; 
     else if (nextStateRobot == STATE_AVANCE) { if (stuck_score > 0) stuck_score -= 1; }
 
-    if (stuck_score >= 30) {
+    if (stuck_score >= 50) {
         nextStateRobot = STATE_DEMI_TOUR_DROITE;
         stuck_score = 0; 
     }

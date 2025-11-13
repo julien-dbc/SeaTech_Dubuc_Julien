@@ -45,6 +45,9 @@
 #define STATE_DEMI_TOUR_DROITE 22
 #define STATE_DEMI_TOUR_DROITE_EN_COURS 23
 
+
+
+
 // Types d'obstacles détectés (Obsolète avec le système 5-bits, mais gardé pour référence)
 #define PAS_D_OBSTACLE 0
 #define OBSTACLE_A_GAUCHE 1
@@ -68,7 +71,7 @@ void SetNextRobotStateInMazeMode(void);
     
 #define OBSTACLE_THRESHOLD3 170.0f
 
-#define MAX_CONSECUTIVE_TURNS 10
+#define MAX_CONSECUTIVE_TURNS 50
 
 
 typedef void (*LogicFunction_t)(void);

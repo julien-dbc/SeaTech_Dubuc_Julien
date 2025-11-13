@@ -99,7 +99,7 @@ void InitTimer4(void) {
     IEC1bits.T4IE = 1; // Enable Timer interrupt
     T4CONbits.TON = 1; // Enable Timer
     
-    SetFreqTimer4(8000);
+    SetFreqTimer4(1000);
 }
 //Interruption du timer 1
 
