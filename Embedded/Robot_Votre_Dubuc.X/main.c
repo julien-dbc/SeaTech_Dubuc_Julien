@@ -13,7 +13,7 @@
 extern unsigned long timestamp;
 extern unsigned long t1;
 unsigned char stateRobot;
-const unsigned long T_60_SECONDS_TICKS = 6000000;
+const unsigned long T_60_SECONDS_TICKS = 480000;
 
 unsigned long start_time_ticks = 0;
 unsigned char robot_is_running = 0; // 0: Arrêté / 1: En cours d'exécution
@@ -25,6 +25,10 @@ unsigned char consecutive_left_turns = 0;
 unsigned char consecutive_right_turns = 0;
 
 unsigned char vitesse_avance;
+LogicFunction_t pfn_SetNextRobotState;
+
+
+
 
 void StopRobotCompletely(void) {
     // Arrête les moteurs
@@ -44,7 +48,7 @@ void StopRobotCompletely(void) {
 
 
 
-
+LogicFunction_t pfn_SetNextRobotState = NULL;
 int main(void) {
     // --- Initialisation ---
     InitOscillator();
@@ -57,6 +61,8 @@ int main(void) {
     unsigned char OBSTACLE_THRESHOLD;
     unsigned char OBSTACLE_THRESHOLD1;
     unsigned char OBSTACLE_THRESHOLD2;
+    pfn_SetNextRobotState = &SetNextRobotStateInAutomaticMode;
+    
     
     // Configuration initiale des LEDs (toutes éteintes au départ)
     LED_BLANCHE_1 = 0; LED_BLEUE_1 = 0; LED_ORANGE_1 = 0; LED_ROUGE_1 = 0; LED_VERTE_1 = 0;
@@ -78,6 +84,7 @@ int main(void) {
             OBSTACLE_THRESHOLD1=45;
             OBSTACLE_THRESHOLD2=20;
             vitesse_avance=35;
+            pfn_SetNextRobotState = &SetNextRobotStateInAutomaticMode;
         }
         if (_RH2 == 1) { 
             start_time_ticks = t1; // ? Enregistre le temps de départ
@@ -85,10 +92,11 @@ int main(void) {
             EN_PWM = 1;                   
             stateRobot = STATE_AVANCE;// Autorise l'exécution
             LED_VERTE_2 = 1;              // Signal visuel de démarrage
-            OBSTACLE_THRESHOLD=20;
-            OBSTACLE_THRESHOLD1=30;
-            OBSTACLE_THRESHOLD2=15;
+            OBSTACLE_THRESHOLD=25;
+            OBSTACLE_THRESHOLD1=35;
+            OBSTACLE_THRESHOLD2=18;
             vitesse_avance=20;
+            pfn_SetNextRobotState = &SetNextRobotStateInMazeMode;
         }
         
     }
@@ -132,7 +140,7 @@ int main(void) {
         // 3. **LOGIQUE DE CONTRÔLE ET AFFICHAGE (LEDs)**
         
         // Mise à jour de l'état du robot
-        OperatingSystemLoop(); 
+//        OperatingSystemLoop(); 
         
         
         // Affichage des LEDs (comme dans votre code original)
@@ -159,16 +167,16 @@ int main(void) {
 
 
 
-
+unsigned char nextStateRobot=0;
 void OperatingSystemLoop(void)
 {
     // Durées minimales (en ticks/ms) pour les actions.
     // (J'utilise les nouvelles valeurs que vous avez fournies)
-    const unsigned int DUREE_RECUL = 20;
+    const unsigned int DUREE_RECUL = 10;
     const unsigned int DUREE_ROTATION_LEGERE = 5;     // Ancien: 15
     const unsigned int DUREE_ROTATION_PRONONCEE = 7;  // Ancien: 15
-    const unsigned int DUREE_ROTATION_SUR_PLACE = 10; // Ancien: 25
-    const unsigned int DUREE_DEMI_TOUR = 40; 
+    const unsigned int DUREE_ROTATION_SUR_PLACE = 12; // Ancien: 25
+    const unsigned int DUREE_DEMI_TOUR = 30; 
 
     switch (stateRobot)
     {
@@ -194,12 +202,13 @@ void OperatingSystemLoop(void)
         break;
 
     case STATE_AVANCE_EN_COURS:
-        SetNextRobotStateInAutomaticMode();
+        //SetNextRobotStateInAutomaticMode();
+        pfn_SetNextRobotState();
         break;
 
     case STATE_AVANCE_PEU:
-        PWMSetSpeedConsigne(20, MOTEUR_DROIT);
-        PWMSetSpeedConsigne(20, MOTEUR_GAUCHE);
+        PWMSetSpeedConsigne(15, MOTEUR_DROIT);
+        PWMSetSpeedConsigne(15, MOTEUR_GAUCHE);
         stateRobot = STATE_AVANCE_PEU_COURS;
         // <--- Logique anti-toupis: reset des compteurs
         consecutive_left_turns = 0;  
@@ -207,7 +216,8 @@ void OperatingSystemLoop(void)
         break;
 
     case STATE_AVANCE_PEU_COURS:
-        SetNextRobotStateInAutomaticMode();
+        //SetNextRobotStateInAutomaticMode();
+        pfn_SetNextRobotState();
         break;
 
  
@@ -235,6 +245,7 @@ void OperatingSystemLoop(void)
         if (timestamp > DUREE_ROTATION_PRONONCEE)
         {
             SetNextRobotStateInAutomaticMode(); // On réévalue APRES avoir tourné
+            //stateRobot = STATE_AVANCE; //pfn_SetNextRobotState();
         }
         break;
 
@@ -266,7 +277,9 @@ void OperatingSystemLoop(void)
     case STATE_TOURNE_LEGER_GAUCHE_EN_COURS:
         if (timestamp > DUREE_ROTATION_LEGERE)
         {
-            SetNextRobotStateInAutomaticMode();
+            //SetNextRobotStateInAutomaticMode();
+            pfn_SetNextRobotState();
+            //stateRobot = STATE_AVANCE;
         }
         break;
 
@@ -289,7 +302,9 @@ void OperatingSystemLoop(void)
     case STATE_TOURNE_SUR_PLACE_GAUCHE_EN_COURS:
         if (timestamp > DUREE_ROTATION_SUR_PLACE)
         {
-            SetNextRobotStateInAutomaticMode();
+            //SetNextRobotStateInAutomaticMode();
+            pfn_SetNextRobotState();
+            //stateRobot = STATE_AVANCE;
         }
         break;
 
@@ -314,7 +329,9 @@ void OperatingSystemLoop(void)
     case STATE_TOURNE_LEGER_DROITE_EN_COURS:
         if (timestamp > DUREE_ROTATION_LEGERE)
         {
-            SetNextRobotStateInAutomaticMode();
+            //SetNextRobotStateInAutomaticMode();
+            pfn_SetNextRobotState();
+            //stateRobot = STATE_AVANCE;
         }
         break;
 
@@ -344,7 +361,9 @@ void OperatingSystemLoop(void)
     case STATE_TOURNE_DROITE_EN_COURS:
         if (timestamp > DUREE_ROTATION_PRONONCEE)
         {
-            SetNextRobotStateInAutomaticMode();
+            //SetNextRobotStateInAutomaticMode();
+            pfn_SetNextRobotState();
+            //stateRobot = STATE_AVANCE;
         }
         break;
 
@@ -356,8 +375,8 @@ void OperatingSystemLoop(void)
             stateRobot = STATE_DEMI_TOUR_DROITE;
             consecutive_right_turns = 0;
         } else {
-            PWMSetSpeedConsigne(-15, MOTEUR_DROIT);
-            PWMSetSpeedConsigne(15, MOTEUR_GAUCHE);
+            PWMSetSpeedConsigne(-20, MOTEUR_DROIT);
+            PWMSetSpeedConsigne(20, MOTEUR_GAUCHE);
             timestamp = 0; 
             stateRobot = STATE_TOURNE_SUR_PLACE_DROITE_EN_COURS;
         }
@@ -367,7 +386,9 @@ void OperatingSystemLoop(void)
     case STATE_TOURNE_SUR_PLACE_DROITE_EN_COURS:
         if (timestamp > DUREE_ROTATION_SUR_PLACE)
         {
-            SetNextRobotStateInAutomaticMode();
+            //SetNextRobotStateInAutomaticMode();
+            pfn_SetNextRobotState();
+            //stateRobot = STATE_AVANCE;
         }
         break;
         
@@ -380,7 +401,8 @@ void OperatingSystemLoop(void)
         break;
 
     case STATE_ARRET_EN_COURS:
-        SetNextRobotStateInAutomaticMode();
+        //SetNextRobotStateInAutomaticMode();
+        pfn_SetNextRobotState();
         break;
 
     case STATE_RECULE:
@@ -398,27 +420,29 @@ void OperatingSystemLoop(void)
         // Attendre d'avoir physiquement reculé avant de tourner
         if (timestamp > DUREE_RECUL) 
         {
-            // Logique 1-sur-2
-            if (recul_counter % 5 == 0) 
-            {
-                stateRobot = STATE_DEMI_TOUR_DROITE; 
-            }
-            else 
-            {
-                if (robotState.distanceTelemetreGauche > robotState.distanceTelemetreDroit) {
-                    stateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE;
-                } else {
-                    stateRobot = STATE_TOURNE_SUR_PLACE_DROITE;
-                }
-            }
+            pfn_SetNextRobotState();
+//            // Logique 1-sur-2
+//            if (recul_counter % 3 == 0) 
+//            {
+//                stateRobot = STATE_DEMI_TOUR_DROITE; 
+//                recul_counter=0; 
+//            }
+//            else 
+//            {
+//                if (robotState.distanceTelemetreGauche > robotState.distanceTelemetreDroit) {
+//                    stateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE;
+//                } else {
+//                    stateRobot = STATE_TOURNE_SUR_PLACE_DROITE;
+//                }
+//            }
         }
         break; 
 
     case STATE_DEMI_TOUR_DROITE:
         consecutive_left_turns = 0;  
         consecutive_right_turns = 0;
-        PWMSetSpeedConsigne(-20, MOTEUR_DROIT);
-        PWMSetSpeedConsigne(20, MOTEUR_GAUCHE);
+        PWMSetSpeedConsigne(25, MOTEUR_DROIT);
+        PWMSetSpeedConsigne(-25, MOTEUR_GAUCHE);
         timestamp = 0; 
         stateRobot = STATE_DEMI_TOUR_DROITE_EN_COURS;
         break;
@@ -426,7 +450,8 @@ void OperatingSystemLoop(void)
     case STATE_DEMI_TOUR_DROITE_EN_COURS:
         if (timestamp > DUREE_DEMI_TOUR) 
         {
-            stateRobot = STATE_AVANCE;
+            pfn_SetNextRobotState();
+            //stateRobot = STATE_AVANCE;
         }
         break;
 
@@ -436,342 +461,403 @@ void OperatingSystemLoop(void)
     }
 }
 
-unsigned char nextStateRobot=0;
-
-
-
-
 
 
 //void SetNextRobotStateInAutomaticMode()
 //{
-//    // 'obstacle_map' est calculée dans la boucle main()
-//    
-//    switch (obstacle_map)
-//    {
-//        // -----------------------------------------------------------
-//        // 0. AVANCER (Rien, ou obstacles très larges non menaçants)
-//        // -----------------------------------------------------------
-//        case 0b00000: // [00000] - Rien
-//            nextStateRobot = STATE_AVANCE;
-//            break;
-//        case 0b10001: // [10001] - TGG + TDD (Passage large)
-//            nextStateRobot = STATE_AVANCE_PEU;
-//            break;
-//            
-//        // -----------------------------------------------------------
-//        // 1. OBSTACLES CÔTÉ DROIT (TD, TDD) -> Tourner GAUCHE
-//        // -----------------------------------------------------------
-//        case 0b00001: // [00001] - TDD (Extrême droite)
-//            nextStateRobot = STATE_TOURNE_LEGER_GAUCHE;
-//            break;
-//            
-//        case 0b00010: // [00010] - TD (Droite)
-//        case 0b00011: // [00011] - TD + TDD (Mur à droite)
-//            nextStateRobot = STATE_TOURNE_GAUCHE;
-//            break;
+//    // --- MEMOIRE DU PIÈGE (Ajout) ---
+//    static int stuck_score = 0; 
 //
-//        // -----------------------------------------------------------
-//        // 2. OBSTACLES CÔTÉ GAUCHE (TG, TGG) -> Tourner DROITE
-//        // -----------------------------------------------------------
-//        case 0b10000: // [10000] - TGG (Extrême gauche)
-//            nextStateRobot = STATE_TOURNE_LEGER_DROITE;
-//            break;
-//            
-//        case 0b01000: // [01000] - TG (Gauche)
-//        case 0b11000: // [11000] - TGG + TG (Mur à gauche)
-//            nextStateRobot = STATE_TOURNE_DROITE;
-//            break;
-//
-//        // -----------------------------------------------------------
-//        // 3. BLOCAGE CENTRAL (TC impliqué) -> Rotation sur place
-//        // -----------------------------------------------------------
-//        case 0b00100: // [00100] - TC (Obstacle pile en face)
-//        
-//        // Les deux côtés sont "libres" (obstacle_map == 0)
-//        // On vérifie quel côté a LE PLUS d'espace réel.
-//        if (robotState.distanceTelemetreGauche > robotState.distanceTelemetreDroit) 
-//        {
-//            // Plus d'espace à gauche -> On tourne à GAUCHE
-//            nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE;
-//        } 
-//        else if (robotState.distanceTelemetreGauche < robotState.distanceTelemetreDroit)  
-//        {
-//            // Plus d'espace à droite (ou égalité) -> On tourne à DROITE
-//            nextStateRobot = STATE_TOURNE_SUR_PLACE_DROITE;
-//        }else
-//        {
-//            nextStateRobot = STATE_DEMI_TOUR_DROITE;
-//
-//        }
-//        break;
-//
-//        case 0b00101: // [00101] - TC + TDD
-//        case 0b00110: // [00110] - TC + TD
-//        case 0b00111: // [00111] - Blocage Centre-Droit
-//            nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE; // Dégager vers la gauche
-//            break;
-//
-//        case 0b01100: // [01100] - TG + TC
-//        case 0b10100: // [10100] - TGG + TC
-//        case 0b11100: // [11100] - Blocage Centre-Gauche
-//            nextStateRobot = STATE_TOURNE_SUR_PLACE_DROITE; // Dégager vers la droite
-//            break;
-//
-//        // -----------------------------------------------------------
-//        // 4. BLOCAGES COMPLEXES / MULTIPLES
-//        // -----------------------------------------------------------
-//
-//        // Obstacles symétriques (TG+TD ou TGG+TC+TDD) -> Avancer si centre libre
-//        case 0b01010: // [01010] - TG + TD (Porte)
-//        case 0b10101: // [10101] - TGG + TC + TDD (Cas étrange)
-//            nextStateRobot = STATE_RECULE; //STATE_DEMI_TOUR_DROITE; // Tente de passer au centre
-//            break;
-//            
-//        // Combinaisons Gauche/Droite sans Centre
-//        case 0b10010: // TGG + TD
-//        case 0b01001: // TG + TDD
-//        case 0b11010: // TGG+TG + TD
-//        case 0b01011: // TG + TD+TDD
-//            nextStateRobot = STATE_RECULE; //STATE_DEMI_TOUR_DROITE; // Tente de passer au centre
-//            break;
-//            
-//        // Combinaisons bloquant tout le passage
-//        case 0b01110: // [01110] - TG + TC + TD (Mur en U)
-//        case 0b01111: // [01111]
-//        case 0b11110: // [11110]
-//        // CORRIGÉ: Suppression de la faute de frappe 'case 0s.'
-//        case 0b10110: // [10110]
-//        case 0b01101: // [01101]
-//        case 0b11011: // [11011]
-//            nextStateRobot = STATE_RECULE; // Blocage frontal étendu
-//            break;
-//
-//        // -----------------------------------------------------------
-//        // 5. BLOCAGE TOTAL -> Reculer
-//        // -----------------------------------------------------------
-//        case 0b11111: // [11111] - Tout est bloqué
-//            nextStateRobot = STATE_RECULE;
-//            break;
-//
-//        // Autres cas (par défaut, pour les combinaisons restantes)
-//        default:
-//            nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE;
-//            break;
-//    }
-//    
-//    // Si l'on n'est pas dans la transition de l'étape en cours
-//    // (C'est-à-dire si on ne passe pas de STATE_XXX_EN_COURS à STATE_XXX)
-//    if (nextStateRobot != stateRobot - 1)
-//        stateRobot = nextStateRobot;
-//
-//}
-
-
-
-
-
-// Où : main.c
-// Remplacez toute la fonction
-
-void SetNextRobotStateInAutomaticMode()
-{
-    // TGG(4) | TG(3) | TC(2) | TD(1) | TDD(0)
-
-    // -----------------------------------------------------------------
-    // PRIORITÉ 1: DANGER CENTRAL (Bit 2 = 1)
-    // (Logique inchangée, elle est correcte)
-    // -----------------------------------------------------------------
-    if (obstacle_map & (1 << 2)) // Si (TC == 1)
-    {
-        // Cas 1A: Impasse / Mur frontal (ex: [x111x], [01110], [11100])
-        if ((obstacle_map & (1 << 3)) || (obstacle_map & (1 << 1))) 
-        {
-            nextStateRobot = STATE_RECULE;//STATE_TOURNE_SUR_PLACE_GAUCHE;
-        }
-        
-        // Cas 1B: Obstacle "poteau" (ex: [00100], [10101])
-        else 
-        {
-            if (robotState.distanceTelemetreGauche > robotState.distanceTelemetreDroit) 
-                nextStateRobot = STATE_TOURNE_GAUCHE;
-            else 
-                nextStateRobot = STATE_TOURNE_DROITE;
-        }
-    }
-
-    // -----------------------------------------------------------------
-    // PRIORITÉ 2: GESTION DES PASSAGES (Centre libre, TC == 0)
-    // NOUS VÉRIFIONS LES CAS SPÉCIFIQUES D'ABORD
-    // -----------------------------------------------------------------
-    
-    // Cas [01010] (Porte TG+TD) -> Problème 1
-    else if (obstacle_map == 0b01010)
-    {
-        nextStateRobot = STATE_AVANCE_PEU; // On force le passage
-    }
-    
-    // Cas [10001] (Porte large TGG+TDD) -> Problème 2
-    else if (obstacle_map == 0b10001)
-    {
-        nextStateRobot = STATE_AVANCE; // Passage large
-    }
-
-    // Cas [01001] (Offset TG+TDD) -> Problème 1
-    else if (obstacle_map == 0b01001)
-    {
-        // Obstacle gauche (TG) et lointain droit (TDD)
-        // On se décale légèrement à droite pour centrer
-        nextStateRobot = STATE_TOURNE_LEGER_DROITE; 
-    }
-    
-    // Cas [10010] (Offset TGG+TD)
-    else if (obstacle_map == 0b10010)
-    {
-        // Obstacle lointain gauche (TGG) et droit (TD)
-        // On se décale légèrement à gauche pour centrer
-        nextStateRobot = STATE_TOURNE_LEGER_GAUCHE;
-    }
-    
-    // -----------------------------------------------------------------
-    // PRIORITÉ 3: MURS LATÉRAUX (Centre libre, non-passage)
-    // Maintenant que les passages sont gérés, on gère les murs.
-    // -----------------------------------------------------------------
-    
-    // Cas: Obstacle à GAUCHE (TG ou TGG)
-    else if (obstacle_map & (1 << 3)) // [x100x] - Si (TG == 1)
-    {
-        nextStateRobot = STATE_TOURNE_DROITE; // Virage prononcé
-    }
-    else if (obstacle_map & (1 << 4)) // [1000x] - Si (TGG == 1)
-    {
-        // On arrive ici SEULEMENT si TGG=1 mais PAS dans un cas "passage"
-        nextStateRobot = STATE_TOURNE_LEGER_DROITE; // Virage léger
-    }
-
-    // Cas: Obstacle à DROITE (TD ou TDD)
-    else if (obstacle_map & (1 << 1)) // [xx01x] - Si (TD == 1)
-    {
-        nextStateRobot = STATE_TOURNE_GAUCHE; // Virage prononcé
-    }
-    else if (obstacle_map & (1 << 0)) // [xx001] - Si (TDD == 1)
-    {
-        // On arrive ici SEULEMENT si TDD=1 mais PAS dans un cas "passage"
-        // (ex: [00001] pur). Le bug [10001] est corrigé.
-        nextStateRobot = STATE_TOURNE_LEGER_GAUCHE; // Virage léger
-    }
-
-    // -----------------------------------------------------------------
-    // PRIORITÉ 4: TOUT EST DÉGAGÉ
-    // -----------------------------------------------------------------
-    else // obstacle_map == 0b00000
-    {
-        nextStateRobot = STATE_AVANCE;
-    }
-
-
-    // Transition vers le nouvel état
-    if (nextStateRobot != stateRobot - 1)
-    {
-        stateRobot = nextStateRobot;
-    }
-}
-
-
-
-
-
-//void SetNextRobotStateInAutomaticMode()
-//{
-//    // 'obstacle_map' est calculée dans la boucle main()
+//    // --- LOGIQUE ORIGINALE (Stable) ---
 //    // TGG | TG | TC | TD | TDD
 //    //  4  |  3 |  2 |  1 |  0
 //
-//    // Logique hiérarchique :
-//    // 1. Gérer les dangers immédiats (Centre bloqué)
-//    // 2. Gérer les obstacles latéraux (Murs)
-//    // 3. Gérer les corrections de trajectoire (Murs lointains)
-//    // 4. Avancer
-//    
-//
-//    // -----------------------------------------------------------------
-//    // PRIORITÉ 1: DANGER CENTRAL (Bit 2 = 1)
-//    // Le capteur central (TC) est le plus critique.
-//    // -----------------------------------------------------------------
+//    // 1. PRIORITÉ 1: DANGER CENTRAL
 //    if (obstacle_map & (1 << 2)) // Si (TC == 1)
 //    {
-//        // Cas 1A: Impasse / Mur frontal (ex: [x111x], [01110], [11100])
-//        // Si le centre ET un côté sont bloqués, c'est une impasse.
+//        // Cas 1A: Impasse / Mur frontal
 //        if ((obstacle_map & (1 << 3)) || (obstacle_map & (1 << 1))) 
 //        {
 //            nextStateRobot = STATE_RECULE;
 //        }
-//        
-//        // Cas 1B: Obstacle "poteau" (ex: [00100], [10101], [10100])
-//        // Le centre est bloqué, mais les côtés (TG, TD) sont libres.
-//        // On tourne sur place du côté où il y a le PLUS d'espace.
+//        // Cas 1B: Obstacle "poteau"
 //        else 
 //        {
 //            if (robotState.distanceTelemetreGauche > robotState.distanceTelemetreDroit) 
-//            {
-//                // Plus d'espace à gauche -> On tourne à GAUCHE
 //                nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE;
-//            } 
 //            else 
-//            {
-//                // Plus d'espace à droite (ou égalité) -> On tourne à DROITE
 //                nextStateRobot = STATE_TOURNE_SUR_PLACE_DROITE;
-//            }
 //        }
 //    }
 //
-//    // -----------------------------------------------------------------
-//    // PRIORITÉ 2: DANGER LATÉRAL (Centre libre)
-//    // (TC == 0)
-//    // -----------------------------------------------------------------
-//    
-//    // Cas 2A: Obstacles des deux côtés (ex: [01010] "Porte")
+//    // 2. PRIORITÉ 2: DANGER LATÉRAL (Centre libre)
+//    // Cas 2A: Obstacles des deux côtés ("Porte")
 //    else if ((obstacle_map & (1 << 3)) && (obstacle_map & (1 << 1)))
 //    {
-//        // Le centre est libre, mais TG et TD détectent.
-//        // C'est un passage étroit ou une "porte".
-//        nextStateRobot = STATE_AVANCE_PEU; // On tente de passer doucement
+//        nextStateRobot = STATE_AVANCE_PEU; 
 //    }
-//    
-//    // Cas 2B: Obstacle à GAUCHE (TG ou TGG)
-//    else if (obstacle_map & (1 << 3)) // [x100x] - Si (TG == 1)
+//    // Cas 2B: Obstacle à GAUCHE
+//    else if (obstacle_map & (1 << 3)) // TG
 //    {
-//        nextStateRobot = STATE_TOURNE_DROITE; // Virage prononcé
+//        nextStateRobot = STATE_TOURNE_DROITE; 
 //    }
-//    else if (obstacle_map & (1 << 4)) // [1000x] - Si (TGG == 1)
+//    else if (obstacle_map & (1 << 4)) // TGG
 //    {
-//        nextStateRobot = STATE_TOURNE_LEGER_DROITE; // Virage léger
+//        nextStateRobot = STATE_TOURNE_LEGER_DROITE; 
+//    }
+//    // Cas 2C: Obstacle à DROITE
+//    else if (obstacle_map & (1 << 1)) // TD
+//    {
+//        nextStateRobot = STATE_TOURNE_GAUCHE; 
+//    }
+//    else if (obstacle_map & (1 << 0)) // TDD
+//    {
+//        nextStateRobot = STATE_TOURNE_LEGER_GAUCHE; 
 //    }
 //
-//    // Cas 2C: Obstacle à DROITE (TD ou TDD)
-//    else if (obstacle_map & (1 << 1)) // [xx01x] - Si (TD == 1)
-//    {
-//        nextStateRobot = STATE_TOURNE_GAUCHE; // Virage prononcé
-//    }
-//    else if (obstacle_map & (1 << 0)) // [xx001] - Si (TDD == 1)
-//    {
-//        nextStateRobot = STATE_TOURNE_LEGER_GAUCHE; // Virage léger
-//    }
-//
-//    // -----------------------------------------------------------------
-//    // PRIORITÉ 3: TOUT EST DÉGAGÉ
-//    // (TC=0, TG=0, TD=0, TGG=0, TDD=0)
-//    // -----------------------------------------------------------------
-//    else // obstacle_map == 0b00000
+//    // 3. PRIORITÉ 3: TOUT EST DÉGAGÉ
+//    else 
 //    {
 //        nextStateRobot = STATE_AVANCE;
 //    }
 //
 //
-//    // Transition vers le nouvel état (logique inchangée)
+//    // --- SURVEILLANCE DU CUL-DE-SAC (Ajout Intelligent) ---
+//    // Cette partie s'exécute APRES avoir choisi l'état, pour le corriger si besoin.
+//
+//    if (nextStateRobot == STATE_RECULE) 
+//    {
+//        // Si le robot décide de reculer, c'est grave. On augmente le score fortement.
+//        stuck_score += 10; 
+//    }
+//    else if (nextStateRobot == STATE_AVANCE || nextStateRobot == STATE_AVANCE_PEU) 
+//    {
+//        // Si le robot avance, on diminue le score DOUCEMENT.
+//        // Cela permet de se "souvenir" qu'on a reculé il y a peu de temps.
+//        if (stuck_score > 0) stuck_score -= 1; 
+//    }
+//    // Note : Les états de rotation (TOURNE_XXX) ne changent pas le score.
+//
+//    // SEUIL DE DÉCLENCHEMENT
+//    // Si stuck_score dépasse 30 (ex: 3 reculs rapprochés), on force le demi-tour.
+//    if (stuck_score >= 50)
+//    {
+//        nextStateRobot = STATE_DEMI_TOUR_DROITE;
+//        stuck_score = 0; // On remet à zéro une fois la décision prise
+//    }
+//
+//
+//    // --- APPLICATION ---
 //    if (nextStateRobot != stateRobot - 1)
 //    {
 //        stateRobot = nextStateRobot;
 //    }
 //}
+//
 
+
+
+void SetNextRobotStateInAutomaticMode()
+{
+    // --- MEMOIRE DU PIÈGE ---
+    static int stuck_score = 0; 
+    
+    // Distance de sécurité absolue (si on est plus près que ça, on pivote sur place)
+    const float DISTANCE_TROP_PRES = 5.0; 
+
+    // -------------------------------------------------------------
+    // 1. PRIORITÉ 1: DANGER CENTRAL (Collision frontale)
+    // -------------------------------------------------------------
+    if (obstacle_map & (1 << 2)) // Si (TC == 1)
+    {
+        // Si on est bloqué devant ET sur les côtés -> Recul
+        if ((obstacle_map & (1 << 3)) || (obstacle_map & (1 << 1))) 
+        {
+            nextStateRobot = STATE_RECULE;
+        }
+        // Sinon, on pivote du côté le plus libre
+        else 
+        {
+            if (robotState.distanceTelemetreGauche > robotState.distanceTelemetreDroit) 
+                nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE;
+            else 
+                nextStateRobot = STATE_TOURNE_SUR_PLACE_DROITE;
+        }
+    }
+
+    // -------------------------------------------------------------
+    // 2. PRIORITÉ 2: SAUVEGARDE LATÉRALE (Mur très proche)
+    // Si un mur est vraiment collé au robot, on interdit d'avancer.
+    // -------------------------------------------------------------
+    else if (robotState.distanceTelemetreGauche < DISTANCE_TROP_PRES || 
+             robotState.distanceTelemetreGaucheGauche < DISTANCE_TROP_PRES)
+    {
+        // Trop près à gauche -> On pivote sur place à droite pour dégager l'avant
+        nextStateRobot = STATE_TOURNE_SUR_PLACE_DROITE;
+    }
+    else if (robotState.distanceTelemetreDroit < DISTANCE_TROP_PRES || 
+             robotState.distanceTelemetreDroiteDroite < DISTANCE_TROP_PRES)
+    {
+        // Trop près à droite -> On pivote sur place à gauche
+        nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE;
+    }
+
+    // -------------------------------------------------------------
+    // 3. PRIORITÉ 3: GESTION DU PASSAGE (La correction majeure est ici)
+    // Si on voit gauche (TG) ET droite (TD), on ne fonce pas bêtement.
+    // -------------------------------------------------------------
+    else if ((obstacle_map & (1 << 3)) && (obstacle_map & (1 << 1)))
+    {
+        // On compare les distances réelles pour se centrer
+        float diff = robotState.distanceTelemetreGauche - robotState.distanceTelemetreDroit;
+
+        if (diff > 5.0) {
+            // Beaucoup plus de place à gauche -> On corrige vers la gauche
+            nextStateRobot = STATE_TOURNE_LEGER_GAUCHE; 
+        }
+        else if (diff < -5.0) {
+            // Beaucoup plus de place à droite -> On corrige vers la droite
+            nextStateRobot = STATE_TOURNE_LEGER_DROITE;
+        }
+        else {
+            // On est à peu près centré -> On peut avancer doucement
+            nextStateRobot = STATE_AVANCE_PEU; 
+        }
+    }
+
+    // -------------------------------------------------------------
+    // 4. PRIORITÉ 4: EVITEMENT CLASSIQUE (Un seul côté détecté)
+    // -------------------------------------------------------------
+    else if (obstacle_map & (1 << 3)) // Obstacle à GAUCHE (TG)
+    {
+        nextStateRobot = STATE_TOURNE_DROITE; 
+    }
+    else if (obstacle_map & (1 << 4)) // Obstacle loin à GAUCHE (TGG)
+    {
+        nextStateRobot = STATE_TOURNE_LEGER_DROITE; 
+    }
+    else if (obstacle_map & (1 << 1)) // Obstacle à DROITE (TD)
+    {
+        nextStateRobot = STATE_TOURNE_GAUCHE; 
+    }
+    else if (obstacle_map & (1 << 0)) // Obstacle loin à DROITE (TDD)
+    {
+        nextStateRobot = STATE_TOURNE_LEGER_GAUCHE; 
+    }
+
+    // -------------------------------------------------------------
+    // 5. VOIE LIBRE
+    // -------------------------------------------------------------
+    else 
+    {
+        nextStateRobot = STATE_AVANCE;
+    }
+
+    // --- SURVEILLANCE DU CUL-DE-SAC ---
+    if (nextStateRobot == STATE_RECULE) stuck_score += 10; 
+    else if (nextStateRobot == STATE_AVANCE) { if (stuck_score > 0) stuck_score -= 1; }
+
+    if (stuck_score >= 30) {
+        nextStateRobot = STATE_DEMI_TOUR_DROITE;
+        stuck_score = 0; 
+    }
+
+    // Application
+    if (nextStateRobot != stateRobot - 1) stateRobot = nextStateRobot;
+}
+
+
+
+
+//void SetNextRobotStateInAutomaticMode()
+//{
+//    // --- MEMOIRE DU PIÈGE ---
+//    static int stuck_score = 0; 
+//    
+//    // Définition d'une distance critique (en cm)
+//    // Si un obstacle est plus proche que ça, on abandonne toute manoeuvre douce.
+//    const float DISTANCE_CRITIQUE = 6.0; 
+//
+//    // -------------------------------------------------------------
+//    // 1. PRIORITÉ 1: DANGER CENTRAL (Inchangé - Anti-collision frontale)
+//    // -------------------------------------------------------------
+//    if (obstacle_map & (1 << 2)) // Si (TC == 1)
+//    {
+//        // Cas 1A: Impasse / Mur frontal
+//        if ((obstacle_map & (1 << 3)) || (obstacle_map & (1 << 1))) 
+//        {
+//            nextStateRobot = STATE_RECULE;
+//        }
+//        // Cas 1B: Obstacle "poteau"
+//        else 
+//        {
+//            if (robotState.distanceTelemetreGauche > robotState.distanceTelemetreDroit) 
+//                nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE;
+//            else 
+//                nextStateRobot = STATE_TOURNE_SUR_PLACE_DROITE;
+//        }
+//    }
+//
+//    // -------------------------------------------------------------
+//    // 1.5. PRIORITÉ CRITIQUE : SAUVEGARDE LATÉRALE (NOUVEAU)
+//    // Ici, on regarde la distance BRUTE. Si on est trop près (< 10cm),
+//    // on interdit le "Forçage de passage" et on tourne franchement.
+//    // -------------------------------------------------------------
+//    else if (robotState.distanceTelemetreGaucheGauche < DISTANCE_CRITIQUE)
+//    {
+//        // TGG détecte un mur TRÈS proche -> On tourne à DROITE (Pas léger, normal)
+//        nextStateRobot = STATE_TOURNE_DROITE;
+//    }
+//    else if (robotState.distanceTelemetreDroiteDroite < DISTANCE_CRITIQUE)
+//    {
+//        // TDD détecte un mur TRÈS proche -> On tourne à GAUCHE (Pas léger, normal)
+//        nextStateRobot = STATE_TOURNE_GAUCHE;
+//    }
+//
+//    // -------------------------------------------------------------
+//    // 2. PRIORITÉ 2: DANGER LATÉRAL (Centre libre)
+//    // Maintenant, on peut forcer le passage car on sait qu'on n'est pas
+//    // en zone "Critique".
+//    // -------------------------------------------------------------
+//    
+//    // Cas 2A: Obstacles des deux côtés ("Porte")
+//    else if ((obstacle_map & (1 << 3)) && (obstacle_map & (1 << 1)))
+//    {
+//        nextStateRobot = STATE_AVANCE_PEU; 
+//    }
+//    // Cas 2B: Obstacle à GAUCHE (Detection standard > 10cm mais < Threshold)
+//    else if (obstacle_map & (1 << 3)) // TG
+//    {
+//        nextStateRobot = STATE_TOURNE_DROITE; 
+//    }
+//    else if (obstacle_map & (1 << 4)) // TGG (Loin)
+//    {
+//        nextStateRobot = STATE_TOURNE_LEGER_DROITE; 
+//    }
+//    // Cas 2C: Obstacle à DROITE (Detection standard > 10cm mais < Threshold)
+//    else if (obstacle_map & (1 << 1)) // TD
+//    {
+//        nextStateRobot = STATE_TOURNE_GAUCHE; 
+//    }
+//    else if (obstacle_map & (1 << 0)) // TDD (Loin)
+//    {
+//        nextStateRobot = STATE_TOURNE_LEGER_GAUCHE; 
+//    }
+//
+//    // -------------------------------------------------------------
+//    // 3. PRIORITÉ 3: TOUT EST DÉGAGÉ
+//    // -------------------------------------------------------------
+//    else 
+//    {
+//        nextStateRobot = STATE_AVANCE;
+//    }
+//
+//
+//    // --- SURVEILLANCE DU CUL-DE-SAC (Code existant) ---
+//    if (nextStateRobot == STATE_RECULE) 
+//    {
+//        stuck_score += 10; 
+//    }
+//    else if (nextStateRobot == STATE_AVANCE || nextStateRobot == STATE_AVANCE_PEU) 
+//    {
+//        if (stuck_score > 0) stuck_score -= 1; 
+//    }
+//
+//    if (stuck_score >= 60)
+//    {
+//        nextStateRobot = STATE_DEMI_TOUR_DROITE;
+//        stuck_score = 0; 
+//    }
+//
+//    // --- APPLICATION ---
+//    if (nextStateRobot != stateRobot - 1)
+//    {
+//        stateRobot = nextStateRobot;
+//    }
+//}
+//
+//
+
+
+
+
+
+
+//===============================================SetNextRobotStateInMazeMode()=======================================
+
+/**
+ * @brief Définit l'état suivant du robot en mode Labyrinthe (Wall Follower).
+ *
+ * Cette fonction implémente la "règle de la main gauche".
+ * Le robot essaie de toujours garder un mur sur sa gauche.
+ * * Hiérarchie de décision :
+ * P1 : Gérer les culs-de-sac (blocage total).
+ * P2 : Gérer les coins extérieurs (quand le mur gauche disparaît).
+ * P3 : Gérer les coins intérieurs (quand un mur apparaît en face).
+ * P4 : Gérer le suivi de couloir (cas normal, avancer tout droit).
+ *
+ * Utilise 'obstacle_map' (variable globale) :
+ * TGG(4) | TG(3) | TC(2) | TD(1) | TDD(0)
+ */
+void SetNextRobotStateInMazeMode(void)
+{
+    // PRIORITÉ 1: CUL-DE-SAC
+    // Si l'avant (TC), la gauche (TG) ET la droite (TD) sont bloqués.
+    // C'est une impasse.
+    if ( (obstacle_map & (1 << 2)) && // Si TC == 1
+         (obstacle_map & (1 << 3)) && // ET TG == 1
+         (obstacle_map & (1 << 1)) )  // ET TD == 1
+    {
+        // Seule solution : faire demi-tour
+        nextStateRobot = STATE_DEMI_TOUR_DROITE;
+    }
+
+    // PRIORITÉ 2: COIN EXTÉRIEUR (Perte du mur gauche)
+    // S'il n'y a PAS de mur à gauche (TG == 0), le robot doit
+    // tourner à gauche pour "retrouver" un mur à suivre.
+    else if ( !(obstacle_map & (1 << 3)) ) // Si TG == 0
+    {
+        // On tourne sur place à gauche (virage ~90°)
+        nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE;
+    }
+    
+    // PRIORITÉ 3: COIN INTÉRIEUR (Mur en face)
+    // Si on arrive ici, c'est que TG == 1 (on a un mur à gauche).
+    // Si on voit un mur en face (TC == 1), c'est un coin intérieur.
+    else if ( (obstacle_map & (1 << 2)) ) // Si TC == 1
+    {
+        // On tourne sur place à droite (virage ~90°)
+        nextStateRobot = STATE_TOURNE_SUR_PLACE_DROITE;
+    }
+
+    // PRIORITÉ 4: SUIVI DE MUR (Couloir normal)
+    // On arrive ici si :
+    // - TG == 1 (on a un mur à gauche)
+    // - TC == 0 (l'avant est dégagé)
+    // C'est le cas normal : on longe le mur.
+    else 
+    {
+        // On affine la trajectoire pour rester parallèle au mur gauche.
+        
+        // Si TGG == 1 (on est TROP PRÈS du mur gauche)
+        if ( (obstacle_map & (1 << 4)) ) 
+        {
+            // On se décale légèrement à droite pour s'éloigner
+            nextStateRobot = STATE_TOURNE_LEGER_DROITE;
+        }
+        // Si TGG == 0 (on est à bonne distance)
+        else
+        {
+            // On continue tout droit
+            nextStateRobot = STATE_AVANCE;
+        }
+    }
+
+    // --- Transition d'état ---
+    // (Logique inchangée de votre fonction d'origine)
+    // Si le nouvel état est différent de l'état "en cours" actuel
+    if (nextStateRobot != stateRobot - 1)
+    {
+        stateRobot = nextStateRobot;
+    }
+}

@@ -59,7 +59,7 @@
 void OperatingSystemLoop(void);
 void SetNextRobotStateInAutomaticMode(void);
 void StopRobotCompletely(void);
-
+void SetNextRobotStateInMazeMode(void);
 
 
 //#define OBSTACLE_THRESHOLD //30.0f
@@ -69,4 +69,9 @@ void StopRobotCompletely(void);
 #define OBSTACLE_THRESHOLD3 170.0f
 
 #define MAX_CONSECUTIVE_TURNS 10
+
+
+typedef void (*LogicFunction_t)(void);
+
+
 #endif	/* MAIN_H */
