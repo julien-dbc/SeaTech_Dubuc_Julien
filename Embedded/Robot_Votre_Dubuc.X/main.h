@@ -93,20 +93,38 @@ typedef void (*LogicFunction_t)(void);
 //#define DUREE_CORRECTION_LEGERE  5  // Petit ajustement
 //
 //// 3. ANTI-OSCILLATION
-//#define SEUIL_OSCILLATION_MAX    4  // Nombre de gauche/droite rapides avant man?uvre d'évasion
-#define DIST_OBSTACLE_DETECTE   35.0f  
+//#define SEUIL_OSCILLATION_MAX    4  // Nombre de gauche/droite rapides avant man?uvre d'évasi
 
+
+
+#define DIST_OBSTACLE_DETECTE   35.0f  
+#define DIST_OBSTACLE_DETECTE1   25.0f  
+#define DIST_OBSTACLE_DETECTE2   23.0f  
 // Distance pour ARRÊTER de tourner (Voie libre)
 // Doit être supérieur à DIST_OBSTACLE_DETECTE pour éviter l'effet "Mite autour de la lampe"
-#define DIST_VOIE_LIBRE         36.0f  
-
+#define DIST_VOIE_LIBRE         30.0f  
 // Distance critique (Arrêt d'urgence / Pivot sur place obligatoire)
-#define DIST_CRITIQUE           22.0f
+#define DIST_CRITIQUE           27.0f
+#define DIST_CRITIQUE1           22.0f
+#define DIST_CRITIQUE2           15.0f
+#define DIST_HYSTERESIS        0.0f   // cm - Pour éviter le clignotement des états
+
+
+
+// Seuils binaires pour le masque (Bitmask)
+#define MASK_TGG  0x10  // 10000 - Gauche Gauche
+#define MASK_TG   0x08  // 01000 - Gauche
+#define MASK_TC   0x04  // 00100 - Centre
+#define MASK_TD   0x02  // 00010 - Droite
+#define MASK_TDD  0x01  // 00001 - Droite Droite
+
+
+
 
 
 // --- 2. TIMERS (TICKS) ---
 // Hystérésis temporelle : Une fois que le capteur dit "C'est libre", 
 // on continue de tourner un tout petit peu pour dégager l'arrière du robot.
-#define MARGE_SECURITE_ROTATION  1   // ~5ms de rotation supplémentaire
+#define MARGE_SECURITE_ROTATION  0   // ~5ms de rotation supplémentaire
 #define TIMEOUT_BLOCAGE          2000 // Si on tourne > 2sec, on considère qu'on est coincé
 #endif	/* MAIN_H */
