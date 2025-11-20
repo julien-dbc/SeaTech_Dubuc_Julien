@@ -42,9 +42,12 @@
 #define STATE_ARRET_EN_COURS 19
 #define STATE_RECULE 20
 #define STATE_RECULE_EN_COURS 21
-#define STATE_DEMI_TOUR_DROITE 22
-#define STATE_DEMI_TOUR_DROITE_EN_COURS 23
-
+#define STATE_DEMI_TOUR 22
+#define STATE_DEMI_TOUR_EN_COURS 23
+//#define STATE_DEMI_TOUR_DROITE 22
+//#define STATE_DEMI_TOUR_DROITE_EN_COURS 23
+//#define STATE_MANOEUVRE_EVASION 24        // Nouvel état
+//#define STATE_MANOEUVRE_EVASION_EN_COURS 25
 
 
 
@@ -76,5 +79,34 @@ void SetNextRobotStateInMazeMode(void);
 
 typedef void (*LogicFunction_t)(void);
 
+// --- PARAMÈTRES DE CALIBRATION (A MODIFIER ICI) ---
 
+//// 1. ZONAGE DES DISTANCES (en cm)
+//#define DIST_CRITIQUE       12.0f   // Zone Rouge : Danger immédiat (Arrêt/Pivot)
+//#define DIST_EVITEMENT      25.0f  // Zone Orange : Obstacle à contourner
+//#define DIST_ANTICIPATION   45.0f  // Zone Verte : Correction trajectoire douce
+//
+//// 2. TIMERS D'ACTION (en ticks/ms)
+//#define DUREE_RECUL_URGENCE      15
+//#define DUREE_PIVOT_SUR_PLACE    5 // Rotation 90° approx
+//#define DUREE_VIRAGE_NORMAL      8 // Virage standard
+//#define DUREE_CORRECTION_LEGERE  5  // Petit ajustement
+//
+//// 3. ANTI-OSCILLATION
+//#define SEUIL_OSCILLATION_MAX    4  // Nombre de gauche/droite rapides avant man?uvre d'évasion
+#define DIST_OBSTACLE_DETECTE   35.0f  
+
+// Distance pour ARRÊTER de tourner (Voie libre)
+// Doit être supérieur à DIST_OBSTACLE_DETECTE pour éviter l'effet "Mite autour de la lampe"
+#define DIST_VOIE_LIBRE         36.0f  
+
+// Distance critique (Arrêt d'urgence / Pivot sur place obligatoire)
+#define DIST_CRITIQUE           22.0f
+
+
+// --- 2. TIMERS (TICKS) ---
+// Hystérésis temporelle : Une fois que le capteur dit "C'est libre", 
+// on continue de tourner un tout petit peu pour dégager l'arrière du robot.
+#define MARGE_SECURITE_ROTATION  1   // ~5ms de rotation supplémentaire
+#define TIMEOUT_BLOCAGE          2000 // Si on tourne > 2sec, on considère qu'on est coincé
 #endif	/* MAIN_H */
