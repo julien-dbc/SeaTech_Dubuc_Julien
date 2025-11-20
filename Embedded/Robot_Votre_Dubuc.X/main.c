@@ -68,6 +68,7 @@ int main(void) {
     
     // BOUCLE D'ATTENTE DEPART
     while(!robot_is_running){
+        
         if (_RH1 == 1) { 
             start_time_ticks = t1;
             robot_is_running = 1; 
@@ -75,7 +76,24 @@ int main(void) {
             stateRobot = STATE_AVANCE;
             LED_ROUGE_2 = 1;              
             vitesse_avance=35;
+            pfn_SetNextRobotState = &SetNextRobotStateInAutomaticMode;
         }
+        // MODE 2 : LABYRINTHE / MAZE (Bouton RH2)
+        else if (_RH2 == 1) { 
+            start_time_ticks = t1;
+            robot_is_running = 1; 
+            EN_PWM = 1;                   
+            stateRobot = STATE_AVANCE;
+            LED_VERTE_2 = 1;             // LED Verte pour mode Labyrinthe
+            
+            // Paramètres spécifiques Maze (souvent plus lent pour être précis)
+            vitesse_avance = 25; 
+            
+            // ASSIGNATION DE L'INTELLIGENCE LABYRINTHE
+            pfn_SetNextRobotState = &SetNextRobotStateInMazeMode;
+        }
+        
+        
     }
     
     
@@ -176,7 +194,7 @@ void OperatingSystemLoop(void)
     // --- ROTATION GAUCHE (Boucle Fermée) ---
     case STATE_TOURNE_GAUCHE:
         PWMSetSpeedConsigne(22, MOTEUR_DROIT);
-        PWMSetSpeedConsigne(0, MOTEUR_GAUCHE); // Pivot sur roue
+        PWMSetSpeedConsigne(-1, MOTEUR_GAUCHE); // Pivot sur roue
         timestamp = 0; 
         finishing_turn = 0; // Reset du flag de fin
         stateRobot = STATE_TOURNE_GAUCHE_EN_COURS;
@@ -207,7 +225,7 @@ void OperatingSystemLoop(void)
 
     // --- ROTATION DROITE (Boucle Fermée) ---
     case STATE_TOURNE_DROITE:
-        PWMSetSpeedConsigne(0, MOTEUR_DROIT); // Pivot sur roue
+        PWMSetSpeedConsigne(-1, MOTEUR_DROIT); // Pivot sur roue
         PWMSetSpeedConsigne(22, MOTEUR_GAUCHE);
         timestamp = 0; 
         finishing_turn = 0;
@@ -303,53 +321,7 @@ void OperatingSystemLoop(void)
     }
 }
 
-//
-//// ============================================================================
-//// CHOIX DE LA DIRECTION (INITIATION DU MOUVEMENT)
-//// ============================================================================
-//unsigned char nextStateRobot = 0;
-//void SetNextRobotStateInAutomaticMode(void)
-//{
-//    float d_TC  = robotState.distanceTelemetreCentre;
-//    float d_TG  = robotState.distanceTelemetreGauche;
-//    float d_TD  = robotState.distanceTelemetreDroit;
-//    float d_TGG = robotState.distanceTelemetreGaucheGauche;
-//    float d_TDD = robotState.distanceTelemetreDroiteDroite;
-//
-//    // 1. URGENCE (Trop près < 10cm) -> Pivot sur place
-//    if (d_TC < DIST_CRITIQUE || d_TG < DIST_CRITIQUE || d_TD < DIST_CRITIQUE) {
-//        // On tourne à l'opposé du danger latéral
-//        if (d_TG < d_TD) nextStateRobot = STATE_TOURNE_SUR_PLACE_DROITE;
-//        else             nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE;
-//    }
-//    
-//    // 2. OBSTACLE FRO<NTAL OU "TUNNEL" -> On pivote
-//    else if (d_TC < DIST_OBSTACLE_DETECTE) {
-//        if (d_TG >= d_TD) nextStateRobot = STATE_TOURNE_GAUCHE; // Gauche plus libre
-//        else             nextStateRobot = STATE_TOURNE_DROITE; // Droite plus libre
-//    }
-//    
-//    // 3. OBSTACLE LATÉRAL -> On tourne simplement
-//    else if (d_TG < DIST_OBSTACLE_DETECTE || d_TGG < DIST_OBSTACLE_DETECTE) {
-//        nextStateRobot = STATE_TOURNE_DROITE;
-//    }
-//    else if (d_TD < DIST_OBSTACLE_DETECTE || d_TDD < DIST_OBSTACLE_DETECTE) {
-//        nextStateRobot = STATE_TOURNE_GAUCHE;
-//    }
-//    
-//    // 4. SINON -> Tout droit
-//    else {
-//        nextStateRobot = STATE_AVANCE;
-//    }
-//
-//    // Application de l'état
-//    if (nextStateRobot != stateRobot - 1 && nextStateRobot != stateRobot) {
-//        stateRobot = nextStateRobot;
-//    }
-//}
 
-
-// Dans main.c ou StateMachine.c
 
 unsigned char nextStateRobot = 0;
 
@@ -488,65 +460,68 @@ void SetNextRobotStateInAutomaticMode(void)
 // * Utilise 'obstacle_map' (variable globale) :
 // * TGG(4) | TG(3) | TC(2) | TD(1) | TDD(0)
 // */
-//void SetNextRobotStateInMazeMode(void)
-//{
-//    // PRIORITÉ 1: CUL-DE-SAC
-//    // Si l'avant (TC), la gauche (TG) ET la droite (TD) sont bloqués.
-//    // C'est une impasse.
-//    if ( (obstacle_map & (1 << 2)) && // Si TC == 1
-//         (obstacle_map & (1 << 3)) && // ET TG == 1
-//         (obstacle_map & (1 << 1)) )  // ET TD == 1
-//    {
-//        // Seule solution : faire demi-tour
-//        nextStateRobot = STATE_DEMI_TOUR_DROITE;
-//    }
-//
-//    // PRIORITÉ 2: COIN EXTÉRIEUR (Perte du mur gauche)
-//    // S'il n'y a PAS de mur à gauche (TG == 0), le robot doit
-//    // tourner à gauche pour "retrouver" un mur à suivre.
-//    else if ( !(obstacle_map & (1 << 3)) ) // Si TG == 0
-//    {
-//        // On tourne sur place à gauche (virage ~90°)
-//        nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE;
-//    }
-//    
-//    // PRIORITÉ 3: COIN INTÉRIEUR (Mur en face)
-//    // Si on arrive ici, c'est que TG == 1 (on a un mur à gauche).
-//    // Si on voit un mur en face (TC == 1), c'est un coin intérieur.
-//    else if ( (obstacle_map & (1 << 2)) ) // Si TC == 1
-//    {
-//        // On tourne sur place à droite (virage ~90°)
-//        nextStateRobot = STATE_TOURNE_SUR_PLACE_DROITE;
-//    }
-//
-//    // PRIORITÉ 4: SUIVI DE MUR (Couloir normal)
-//    // On arrive ici si :
-//    // - TG == 1 (on a un mur à gauche)
-//    // - TC == 0 (l'avant est dégagé)
-//    // C'est le cas normal : on longe le mur.
-//    else 
-//    {
-//        // On affine la trajectoire pour rester parallèle au mur gauche.
-//        
-//        // Si TGG == 1 (on est TROP PRÈS du mur gauche)
-//        if ( (obstacle_map & (1 << 4)) ) 
-//        {
-//            // On se décale légèrement à droite pour s'éloigner
-//            nextStateRobot = STATE_TOURNE_LEGER_DROITE;
-//        }
-//        // Si TGG == 0 (on est à bonne distance)
-//        else
-//        {
-//            // On continue tout droit
-//            nextStateRobot = STATE_AVANCE;
-//        }
-//    }
-//
-//    // --- Transition d'état ---
-//    // (Logique inchangée de votre fonction d'origine)
-//    // Si le nouvel état est différent de l'état "en cours" actuel
-//    if (nextStateRobot != stateRobot - 1)
-//    {
-//        stateRobot = nextStateRobot;
-//    }
-//}
+/**
+ * @brief Mode Labyrinthe : Règle de la main gauche (Wall Follower).
+ */
+void SetNextRobotStateInMazeMode(void)
+{
+    // 1. Acquisition des distances (Même méthode que le mode Auto)
+    float d_TC  = robotState.distanceTelemetreCentre;
+    float d_TG  = robotState.distanceTelemetreGauche;
+    float d_TD  = robotState.distanceTelemetreDroit;
+    float d_TGG = robotState.distanceTelemetreGaucheGauche; 
+    
+    // 2. Création du Masque Binaire (Mise à jour pour ce mode)
+    unsigned char obstacleMask = 0;
+    
+    // Note : On peut ajuster les seuils pour le labyrinthe si nécessaire
+    if (d_TGG < DIST_OBSTACLE_DETECTE2) obstacleMask |= MASK_TGG;
+    if (d_TG  < DIST_OBSTACLE_DETECTE1) obstacleMask |= MASK_TG;
+    if (d_TC  < DIST_OBSTACLE_DETECTE)  obstacleMask |= MASK_TC;
+    if (d_TD  < DIST_OBSTACLE_DETECTE1) obstacleMask |= MASK_TD;
+
+    nextStateRobot = stateRobot; // Par défaut, on garde l'état
+
+    // --- LOGIQUE DE PRIORITÉ (Main Gauche) ---
+
+    // CAS 1 : CUL-DE-SAC (Bloqué Devant + Gauche + Droite)
+    if ((obstacleMask & MASK_TC) && (obstacleMask & MASK_TG) && (obstacleMask & MASK_TD)) {
+        nextStateRobot = STATE_DEMI_TOUR;
+    }
+    
+    // CAS 2 : COIN EXTÉRIEUR (Perte du mur gauche)
+    // Si on avançait et qu'on ne voit plus de mur à gauche, il faut tourner pour le suivre.
+    else if (!(obstacleMask & MASK_TG)) {
+        // On vérifie qu'on n'est pas juste en train de passer une petite ouverture
+        // Si on ne voit rien à gauche, on tourne à gauche pour recoller au mur
+        nextStateRobot = STATE_TOURNE_GAUCHE; 
+        // Ou STATE_TOURNE_SUR_PLACE_GAUCHE si le virage doit être serré
+    }
+    
+    // CAS 3 : COIN INTÉRIEUR (Mur en face)
+    // On a un mur à gauche (TG détecté), mais on est bloqué devant.
+    else if (obstacleMask & MASK_TC) {
+        // On tourne à droite pour éviter le mur en face tout en gardant le mur gauche comme pivot
+        nextStateRobot = STATE_TOURNE_SUR_PLACE_DROITE;
+    }
+    
+    // CAS 4 : SUIVI DE MUR (Couloir normal)
+    // Mur à gauche (TG ok), Voie libre devant (TC ok).
+    else {
+        // Régulation fine pour rester parallèle
+        if (obstacleMask & MASK_TGG) {
+            // On est TROP PRÈS du mur gauche (capteur TGG déclenché)
+            nextStateRobot = STATE_TOURNE_LEGER_DROITE;
+        }
+        else {
+            // Distance correcte
+            nextStateRobot = STATE_AVANCE;
+        }
+    }
+
+    // 3. Application de l'état (Gestion des transitions)
+    // On évite de relancer l'état s'il est déjà en cours (ex: STATE_AVANCE vs STATE_AVANCE_EN_COURS)
+    if (nextStateRobot != stateRobot && nextStateRobot != (stateRobot - 1)) {
+        stateRobot = nextStateRobot;
+    }
+}
