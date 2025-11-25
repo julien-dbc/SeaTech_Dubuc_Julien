@@ -46,7 +46,7 @@ void PWMSetSpeed(float vitesseEnPourcents, float moteur) {
 
 }
 
-float deceleration=500;
+float deceleration=30;
 float acceleration = 30;
 
 void PWMUpdateSpeed() {
