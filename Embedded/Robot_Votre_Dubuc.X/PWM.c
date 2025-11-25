@@ -46,6 +46,7 @@ void PWMSetSpeed(float vitesseEnPourcents, float moteur) {
 
 }
 
+float deceleration=500;
 float acceleration = 30;
 
 void PWMUpdateSpeed() {
@@ -57,7 +58,7 @@ void PWMUpdateSpeed() {
     }
     if (robotState.vitesseGaucheCommandeCourante > robotState.vitesseGaucheConsigne) {
         robotState.vitesseGaucheCommandeCourante = Max(
-                robotState.vitesseGaucheCommandeCourante - acceleration,
+                robotState.vitesseGaucheCommandeCourante - deceleration,
                 robotState.vitesseGaucheConsigne);
     }
     if (robotState.vitesseGaucheCommandeCourante > 0) {
@@ -74,7 +75,7 @@ void PWMUpdateSpeed() {
     }
     if (robotState.vitesseDroiteCommandeCourante > robotState.vitesseDroiteConsigne) {
         robotState.vitesseDroiteCommandeCourante = Max(
-                robotState.vitesseDroiteCommandeCourante - acceleration,
+                robotState.vitesseDroiteCommandeCourante - deceleration,
                 robotState.vitesseDroiteConsigne);
     }
     if (robotState.vitesseDroiteCommandeCourante >= 0) {

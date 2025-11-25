@@ -74,17 +74,15 @@ void SetNextRobotStateInMazeMode(void);
 typedef void (*LogicFunction_t)(void);
 
 
-#define DIST_OBSTACLE_DETECTE   35.0f  
-#define DIST_OBSTACLE_DETECTE1   25.0f  
-#define DIST_OBSTACLE_DETECTE2   23.0f  
+//#define DIST_OBSTACLE_DETECTE   35.0f  
+//#define DIST_OBSTACLE_DETECTE1   25.0f  
+//#define DIST_OBSTACLE_DETECTE2   23.0f  
 // Distance pour ARRÊTER de tourner (Voie libre)
 // Doit être supérieur à DIST_OBSTACLE_DETECTE pour éviter l'effet "Mite autour de la lampe"
-#define DIST_VOIE_LIBRE         30.0f  
+#define DIST_VOIE_LIBRE         40.0f  
 // Distance critique (Arrêt d'urgence / Pivot sur place obligatoire)
-#define DIST_CRITIQUE           27.0f
-#define DIST_CRITIQUE1           22.0f
-#define DIST_CRITIQUE2           15.0f
-#define DIST_HYSTERESIS        0.0f   // cm - Pour éviter le clignotement des états
+#define DIST_CRITIQUE           33.0f
+#define DIST_CRITIQUE1           28.0f
 
 
 

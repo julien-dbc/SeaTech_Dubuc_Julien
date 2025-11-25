@@ -1,5 +1,9 @@
 #include <xc.h>
 #include "adc.h"
+#include "Robot.h" 
+#include "main.h"
+#include "PWM.h"
+
 unsigned char ADCResultIndex = 0;
 static unsigned int ADCResult[5];
 unsigned char ADCConversionFinishedFlag;
@@ -63,16 +67,51 @@ void InitADC1(void) {
     AD1CON1bits.ADON = 1; // Turn on the A/D converter
 }
 
-/* This is ADC interrupt routine */
+
+
+/* Routine d'interruption ADC - Optimisée pour la réactivité */
 void __attribute__((interrupt, no_auto_psv)) _AD1Interrupt(void) {
     IFS0bits.AD1IF = 0;
-    ADCResult[0] = ADC1BUF0; // Read the AN-scan input 1 conversion result
-    ADCResult[1] = ADC1BUF1; // Read the AN3 conversion result
-    ADCResult[2] = ADC1BUF2; // Read the AN5 conversion result
-    ADCResult[3] = ADC1BUF3; // Read the AN3 conversion result
-    ADCResult[4] = ADC1BUF4; // Read the AN5 conversion result
+
+    // 1. Lecture directe des valeurs brutes
+    unsigned int val_gauche_gauche = ADC1BUF0; // AN8
+    unsigned int val_gauche        = ADC1BUF1; // AN9
+    unsigned int val_centre        = ADC1BUF2; // AN10
+    unsigned int val_droit         = ADC1BUF3; // AN11
+    unsigned int val_droit_droit   = ADC1BUF4; // AN0
+
+    ADCResult[0] = val_gauche_gauche;
+    ADCResult[1] = val_gauche;
+    ADCResult[2] = val_centre;
+    ADCResult[3] = val_droit;
+    ADCResult[4] = val_droit_droit;
+
+    // 2. Conversion RAPIDE (Entiers) pour mise à jour de l'état
+    // Formule simplifiée dérivée de votre doc : Dist = 42200 / ADC - 5
+    // Protection contre la division par zéro si ADC=0
+    if(val_centre > 100) robotState.distanceTelemetreCentre = (42200 / val_centre) - 5;
+    else robotState.distanceTelemetreCentre = 80.0; // Trop loin
+
+    if(val_gauche > 100) robotState.distanceTelemetreGauche = (42200 / val_gauche) - 5;
+    else robotState.distanceTelemetreGauche = 80.0;
+
+    if(val_droit > 100) robotState.distanceTelemetreDroit = (42200 / val_droit) - 5;
+    else robotState.distanceTelemetreDroit = 80.0;
+    
+    // Ajoutez ici les autres capteurs si vous les utilisez dans la logique
+    if(val_gauche_gauche > 100) robotState.distanceTelemetreGaucheGauche = (42200 / val_gauche_gauche) - 5;
+    else robotState.distanceTelemetreGaucheGauche = 80.0;
+    
+    if(val_droit_droit > 100) robotState.distanceTelemetreDroiteDroite = (42200 / val_droit_droit) - 5;
+    else robotState.distanceTelemetreDroiteDroite = 80.0;
+
+
     ADCConversionFinishedFlag = 1;
+    
+    OperatingSystemLoop();
+    PWMUpdateSpeed(); 
 }
+
 
 void ADC1StartConversionSequence() {
     AD1CON1bits.SAMP = 1; //Lance une acquisition ADC

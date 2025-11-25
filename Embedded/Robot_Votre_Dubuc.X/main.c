@@ -9,19 +9,24 @@
 #include "ADC.h"
 #include "main.h"
 
+
+
+unsigned char DIST_OBSTACLE_DETECTE;
+unsigned char DIST_OBSTACLE_DETECTE1;
+unsigned char DIST_OBSTACLE_DETECTE2;
+
 extern unsigned long timestamp;
 extern unsigned long t1;
 unsigned char stateRobot;
-const unsigned long T_60_SECONDS_TICKS = 480000;
+const unsigned long T_60_SECONDS_TICKS = 60000;
 
 unsigned long start_time_ticks = 0;
 unsigned char robot_is_running = 0;
 
-// Variables globales
-unsigned char vitesse_avance = 35;
+// Variables globaless
+unsigned char vitesse_avance;
 LogicFunction_t pfn_SetNextRobotState = NULL;
 
-// Indicateur pour la marge de sécurité (Hystérésis temporelle)
 unsigned char finishing_turn = 0; 
 
 
@@ -35,10 +40,7 @@ void StopRobotCompletely(void) {
     LED_BLANCHE_1 = 1; LED_BLEUE_1 = 1; LED_ORANGE_1 = 1; LED_ROUGE_1 = 1; LED_VERTE_1 = 1;
 }
 
-/**
- * @brief Vérifie si l'avant du robot est suffisamment dégagé pour avancer.
- * @return 1 si libre, 0 si obstacle.
- */
+
 int IsPathClear(void) {
     // On vérifie le Centre, la Gauche (TG) et la Droite (TD).
     // Il faut que TOUT soit supérieur au seuil "VOIE_LIBRE".
@@ -77,6 +79,9 @@ int main(void) {
             LED_ROUGE_2 = 1;              
             vitesse_avance=35;
             pfn_SetNextRobotState = &SetNextRobotStateInAutomaticMode;
+            DIST_OBSTACLE_DETECTE=40.0;
+            DIST_OBSTACLE_DETECTE1=30.0;
+            DIST_OBSTACLE_DETECTE2=28.0;
         }
         // MODE 2 : LABYRINTHE / MAZE (Bouton RH2)
         else if (_RH2 == 1) { 
@@ -84,52 +89,21 @@ int main(void) {
             robot_is_running = 1; 
             EN_PWM = 1;                   
             stateRobot = STATE_AVANCE;
-            LED_VERTE_2 = 1;             // LED Verte pour mode Labyrinthe
+            LED_VERTE_2 = 1;
             
             // Paramètres spécifiques Maze (souvent plus lent pour être précis)
-            vitesse_avance = 25; 
+            vitesse_avance = 30; 
             
-            // ASSIGNATION DE L'INTELLIGENCE LABYRINTHE
-            pfn_SetNextRobotState = &SetNextRobotStateInMazeMode;
+            pfn_SetNextRobotState = &SetNextRobotStateInAutomaticMode;
+            DIST_OBSTACLE_DETECTE=30.0;
+            DIST_OBSTACLE_DETECTE1=20.0;
+            DIST_OBSTACLE_DETECTE2=15.0;
         }
         
         
     }
     
     
-//        // --- BOUCLE D'ATTENTE AVANT DÉPART ---
-//    // Le robot attend ici l'appui sur le bouton.
-//    while(!robot_is_running){
-//        if (_RH1 == 1) { 
-//            start_time_ticks = t1; // ? Enregistre le temps de départ
-//            robot_is_running = 1; 
-//            EN_PWM = 1;                   
-//            stateRobot = STATE_AVANCE;// Autorise l'exécution
-//            LED_ROUGE_2 = 1;              // Signal visuel de démarrage
-//            OBSTACLE_THRESHOLD=30;
-//            OBSTACLE_THRESHOLD1=45;
-//            OBSTACLE_THRESHOLD2=20;
-//            vitesse_avance=35;
-//            pfn_SetNextRobotState = &SetNextRobotStateInAutomaticMode;
-//        }
-//        if (_RH2 == 1) { 
-//            start_time_ticks = t1; // ? Enregistre le temps de départ
-//            robot_is_running = 1; 
-//            EN_PWM = 1;                   
-//            stateRobot = STATE_AVANCE;// Autorise l'exécution
-//            LED_VERTE_2 = 1;              // Signal visuel de démarrage
-//            OBSTACLE_THRESHOLD=25;
-//            OBSTACLE_THRESHOLD1=35;
-//            OBSTACLE_THRESHOLD2=18;
-//            vitesse_avance=20;
-//            pfn_SetNextRobotState = &SetNextRobotStateInMazeMode;
-//        }
-//        
-//    }
-//    
-    
-    
-    // BOUCLE PRINCIPALE
     while (robot_is_running==1) {
         
         // 1. Arrêt au bout de 60s
@@ -139,32 +113,19 @@ int main(void) {
             break; 
         }
 
-        // 2. Conversion ADC (Capteurs)
         if (ADCIsConversionFinished() == 1) {
-            ADCClearConversionFinishedFlag();
-            unsigned int * result = ADCGetResult();
-            float volts;
-            
-            // Conversion brute (adapter la formule selon vos capteurs si besoin)
-            // Ajout d'une sécurité: si volts trop faible, distance = max (80cm)
-            volts = ((float) result[0]) * 3.3 / 4096;if (volts < 0.4f) volts = 0.4f; robotState.distanceTelemetreGaucheGauche = (volts > 0.2) ? (34 / volts - 5) : 80.0;
-            volts = ((float) result[1]) * 3.3 / 4096;if (volts < 0.4f) volts = 0.4f; robotState.distanceTelemetreGauche       = (volts > 0.2) ? (34 / volts - 5) : 80.0;
-            volts = ((float) result[2]) * 3.3 / 4096;if (volts < 0.4f) volts = 0.4f; robotState.distanceTelemetreCentre       = (volts > 0.2) ? (34 / volts - 5) : 80.0;
-            volts = ((float) result[3]) * 3.3 / 4096;if (volts < 0.4f) volts = 0.4f; robotState.distanceTelemetreDroit        = (volts > 0.2) ? (34 / volts - 5) : 80.0;
-            volts = ((float) result[4]) * 3.3 / 4096;if (volts < 0.4f) volts = 0.4f; robotState.distanceTelemetreDroiteDroite = (volts > 0.2) ? (34 / volts - 5) : 80.0;
+             ADCClearConversionFinishedFlag();
+            LED_ORANGE_1 = (robotState.distanceTelemetreCentre < DIST_OBSTACLE_DETECTE);
+            LED_BLEUE_1  = (robotState.distanceTelemetreGauche < DIST_OBSTACLE_DETECTE1);
+            LED_ROUGE_1  = (robotState.distanceTelemetreDroit  < DIST_OBSTACLE_DETECTE1);
+            LED_VERTE_1  = (robotState.distanceTelemetreDroiteDroite  < DIST_OBSTACLE_DETECTE2);
+            LED_BLANCHE_1  = (robotState.distanceTelemetreGaucheGauche  < DIST_OBSTACLE_DETECTE2);
         }
-
-        // 3. Debug LEDs (Allumées si obstacle détecté)
-        LED_ORANGE_1 = (robotState.distanceTelemetreCentre < DIST_OBSTACLE_DETECTE);
-        LED_BLEUE_1  = (robotState.distanceTelemetreGauche < DIST_OBSTACLE_DETECTE1);
-        LED_ROUGE_1  = (robotState.distanceTelemetreDroit  < DIST_OBSTACLE_DETECTE1);
-        LED_VERTE_1  = (robotState.distanceTelemetreDroiteDroite  < DIST_OBSTACLE_DETECTE2);
-        LED_BLANCHE_1  = (robotState.distanceTelemetreGaucheGauche  < DIST_OBSTACLE_DETECTE2);
     }
+        
+        
     return 0;
 }   
-
-// --- LOGIQUE D'ÉTAT (OS) ---
 
 void OperatingSystemLoop(void)
 {
@@ -250,10 +211,7 @@ void OperatingSystemLoop(void)
         }
         break;
 
-    // --- ROTATION SUR PLACE (Pour urgence ou coincé) ---
-    // Ici on peut garder un timer fixe OU utiliser la même logique. 
-    // Pour la sécurité, on utilise souvent un timer fixe pour faire un vrai 90°
-    // Mais appliquons la logique capteur pour être cohérent.
+
     case STATE_TOURNE_SUR_PLACE_GAUCHE:
         PWMSetSpeedConsigne(20, MOTEUR_DROIT);
         PWMSetSpeedConsigne(-20, MOTEUR_GAUCHE);
@@ -264,13 +222,13 @@ void OperatingSystemLoop(void)
 
     case STATE_TOURNE_SUR_PLACE_GAUCHE_EN_COURS:
         // On impose quand même une rotation minimale de 100ms pour se dégager d'un mur frontal
-        if (timestamp > 1 && IsPathClear()) { 
+        if (IsPathClear()) { 
              stateRobot = STATE_AVANCE;
         }
         // Timeout si bloqué
         if (timestamp > TIMEOUT_BLOCAGE) stateRobot = STATE_RECULE;
         break;
-
+        
     case STATE_TOURNE_SUR_PLACE_DROITE:
         PWMSetSpeedConsigne(-20, MOTEUR_DROIT);
         PWMSetSpeedConsigne(20, MOTEUR_GAUCHE);
@@ -280,7 +238,7 @@ void OperatingSystemLoop(void)
         break;
 
     case STATE_TOURNE_SUR_PLACE_DROITE_EN_COURS:
-        if (timestamp > 1 && IsPathClear()) {
+        if (IsPathClear()) {
              stateRobot = STATE_AVANCE;
         }
         if (timestamp > TIMEOUT_BLOCAGE) stateRobot = STATE_RECULE;
@@ -325,12 +283,7 @@ void OperatingSystemLoop(void)
 
 unsigned char nextStateRobot = 0;
 
-// Fonction utilitaire pour l'hystérésis (Robustesse Signal)
-//unsigned char IsObstacle(float distance, float threshold) {
-//    // Si on détecte, on reste à 1 tant qu'on est pas "largement" sorti (threshold + hysteresis)
-//    // Note: Ici je simplifie, une vraie hystérésis nécessiterait une variable d'état statique par capteur.
-//    return (distance < threshold) ? 1 : 0;
-//}
+
 
 void SetNextRobotStateInAutomaticMode(void)
 {
@@ -438,89 +391,6 @@ void SetNextRobotStateInAutomaticMode(void)
 
     // 5. Application de l'état (Gestion des transitions)
     // On vérifie si l'état change et si on n'est pas déjà en train d'attendre une transition (state - 1)
-    if (nextStateRobot != stateRobot && nextStateRobot != (stateRobot - 1)) {
-        stateRobot = nextStateRobot;
-    }
-}
-
-//
-////===============================================SetNextRobotStateInMazeMode()=======================================
-//
-///**
-// * @brief Définit l'état suivant du robot en mode Labyrinthe (Wall Follower).
-// *
-// * Cette fonction implémente la "règle de la main gauche".
-// * Le robot essaie de toujours garder un mur sur sa gauche.
-// * * Hiérarchie de décision :
-// * P1 : Gérer les culs-de-sac (blocage total).
-// * P2 : Gérer les coins extérieurs (quand le mur gauche disparaît).
-// * P3 : Gérer les coins intérieurs (quand un mur apparaît en face).
-// * P4 : Gérer le suivi de couloir (cas normal, avancer tout droit).
-// *
-// * Utilise 'obstacle_map' (variable globale) :
-// * TGG(4) | TG(3) | TC(2) | TD(1) | TDD(0)
-// */
-/**
- * @brief Mode Labyrinthe : Règle de la main gauche (Wall Follower).
- */
-void SetNextRobotStateInMazeMode(void)
-{
-    // 1. Acquisition des distances (Même méthode que le mode Auto)
-    float d_TC  = robotState.distanceTelemetreCentre;
-    float d_TG  = robotState.distanceTelemetreGauche;
-    float d_TD  = robotState.distanceTelemetreDroit;
-    float d_TGG = robotState.distanceTelemetreGaucheGauche; 
-    
-    // 2. Création du Masque Binaire (Mise à jour pour ce mode)
-    unsigned char obstacleMask = 0;
-    
-    // Note : On peut ajuster les seuils pour le labyrinthe si nécessaire
-    if (d_TGG < DIST_OBSTACLE_DETECTE2) obstacleMask |= MASK_TGG;
-    if (d_TG  < DIST_OBSTACLE_DETECTE1) obstacleMask |= MASK_TG;
-    if (d_TC  < DIST_OBSTACLE_DETECTE)  obstacleMask |= MASK_TC;
-    if (d_TD  < DIST_OBSTACLE_DETECTE1) obstacleMask |= MASK_TD;
-
-    nextStateRobot = stateRobot; // Par défaut, on garde l'état
-
-    // --- LOGIQUE DE PRIORITÉ (Main Gauche) ---
-
-    // CAS 1 : CUL-DE-SAC (Bloqué Devant + Gauche + Droite)
-    if ((obstacleMask & MASK_TC) && (obstacleMask & MASK_TG) && (obstacleMask & MASK_TD)) {
-        nextStateRobot = STATE_DEMI_TOUR;
-    }
-    
-    // CAS 2 : COIN EXTÉRIEUR (Perte du mur gauche)
-    // Si on avançait et qu'on ne voit plus de mur à gauche, il faut tourner pour le suivre.
-    else if (!(obstacleMask & MASK_TG)) {
-        // On vérifie qu'on n'est pas juste en train de passer une petite ouverture
-        // Si on ne voit rien à gauche, on tourne à gauche pour recoller au mur
-        nextStateRobot = STATE_TOURNE_GAUCHE; 
-        // Ou STATE_TOURNE_SUR_PLACE_GAUCHE si le virage doit être serré
-    }
-    
-    // CAS 3 : COIN INTÉRIEUR (Mur en face)
-    // On a un mur à gauche (TG détecté), mais on est bloqué devant.
-    else if (obstacleMask & MASK_TC) {
-        // On tourne à droite pour éviter le mur en face tout en gardant le mur gauche comme pivot
-        nextStateRobot = STATE_TOURNE_SUR_PLACE_DROITE;
-    }
-    
-    // CAS 4 : SUIVI DE MUR (Couloir normal)
-    // Mur à gauche (TG ok), Voie libre devant (TC ok).
-    else {
-        // Régulation fine pour rester parallèle
-        if (obstacleMask & MASK_TGG) {
-            // On est TROP PRÈS du mur gauche (capteur TGG déclenché)
-            nextStateRobot = STATE_TOURNE_LEGER_DROITE;
-        }
-        else {
-            // Distance correcte
-            nextStateRobot = STATE_AVANCE;
-        }
-    }
-
-    // 3. Application de l'état (Gestion des transitions)
-    // On évite de relancer l'état s'il est déjà en cours (ex: STATE_AVANCE vs STATE_AVANCE_EN_COURS)
     if (nextStateRobot != stateRobot && nextStateRobot != (stateRobot - 1)) {
         stateRobot = nextStateRobot;
     }

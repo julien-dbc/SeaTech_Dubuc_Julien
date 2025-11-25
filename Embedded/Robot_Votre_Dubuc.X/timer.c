@@ -99,21 +99,16 @@ void InitTimer4(void) {
     IEC1bits.T4IE = 1; // Enable Timer interrupt
     T4CONbits.TON = 1; // Enable Timer
     
-    SetFreqTimer4(5000);
+    SetFreqTimer4(1000);
 }
-//Interruption du timer 1
-volatile unsigned char tick_flag = 0;
+
+
+
 void __attribute__((interrupt, no_auto_psv)) _T4Interrupt(void) {
     IFS1bits.T4IF = 0;
-    //LED_BLANCHE_1 = !LED_BLANCHE_1;
-    // LED_VERTE_2 = ! LED_VERTE_2;
     timestamp+=1;
     t1+=1;
-    tick_flag = 1;
-    
-    ADC1StartConversionSequence();
-    OperatingSystemLoop();
-    PWMUpdateSpeed();    
+    ADC1StartConversionSequence(); 
 }
 
 void SetFreqTimer4(float freq)
