@@ -7,7 +7,7 @@
 #ifndef MAIN_H
 #define	MAIN_H
 
-// …tats principaux
+// √âtats principaux
 #define STATE_ATTENTE 0
 #define STATE_ATTENTE_EN_COURS 1
 #define STATE_AVANCE 2
@@ -16,28 +16,28 @@
 #define STATE_AVANCE_PEU 4
 #define STATE_AVANCE_PEU_COURS 5
 
-// …tats de rotation ‡ gauche
+// √âtats de rotation √† gauche
 #define STATE_TOURNE_LEGER_GAUCHE 6
 #define STATE_TOURNE_LEGER_GAUCHE_EN_COURS 7
 
 #define STATE_TOURNE_GAUCHE 8
 #define STATE_TOURNE_GAUCHE_EN_COURS 9
 
-// …tats de rotation ‡ droite
+// √âtats de rotation √† droite
 #define STATE_TOURNE_LEGER_DROITE 10
 #define STATE_TOURNE_LEGER_DROITE_EN_COURS 11
 
 #define STATE_TOURNE_DROITE 12
 #define STATE_TOURNE_DROITE_EN_COURS 13
 
-// …tats de rotation sur place
+// √âtats de rotation sur place
 #define STATE_TOURNE_SUR_PLACE_GAUCHE 14
 #define STATE_TOURNE_SUR_PLACE_GAUCHE_EN_COURS 15
 
 #define STATE_TOURNE_SUR_PLACE_DROITE 16
 #define STATE_TOURNE_SUR_PLACE_DROITE_EN_COURS 17
 
-// …tats d'arrÍt ou de recul (optionnels)
+// √âtats d'arr√™t ou de recul (optionnels)
 #define STATE_ARRET 18
 #define STATE_ARRET_EN_COURS 19
 #define STATE_RECULE 20
@@ -45,18 +45,6 @@
 #define STATE_DEMI_TOUR 22
 #define STATE_DEMI_TOUR_EN_COURS 23
 
-
-
-// Types d'obstacles dÈtectÈs (ObsolËte avec le systËme 5-bits, mais gardÈ pour rÈfÈrence)
-#define PAS_D_OBSTACLE 0
-#define OBSTACLE_A_GAUCHE 1
-#define OBSTACLE_LEGER_GAUCHE 2
-#define OBSTACLE_A_DROITE 3
-#define OBSTACLE_LEGER_DROITE 4
-#define OBSTACLE_EN_FACE 5
-
-
-// Assurez-vous que ces valeurs ne chevauchent pas les Ètats existants.
 // Prototypes
 void OperatingSystemLoop(void);
 void SetNextRobotStateInAutomaticMode(void);
@@ -67,7 +55,6 @@ void SetNextRobotStateInMazeMode(void);
 
     
 #define OBSTACLE_THRESHOLD3 170.0f
-
 #define MAX_CONSECUTIVE_TURNS 50
 
 
@@ -77,10 +64,10 @@ typedef void (*LogicFunction_t)(void);
 //#define DIST_OBSTACLE_DETECTE   35.0f  
 //#define DIST_OBSTACLE_DETECTE1   25.0f  
 //#define DIST_OBSTACLE_DETECTE2   23.0f  
-// Distance pour ARR TER de tourner (Voie libre)
-// Doit Ítre supÈrieur ‡ DIST_OBSTACLE_DETECTE pour Èviter l'effet "Mite autour de la lampe"
+// Distance pour ARR√äTER de tourner (Voie libre)
+// Doit √™tre sup√©rieur √† DIST_OBSTACLE_DETECTE pour √©viter l'effet "Mite autour de la lampe"
 #define DIST_VOIE_LIBRE         40.0f  
-// Distance critique (ArrÍt d'urgence / Pivot sur place obligatoire)
+// Distance critique (Arr√™t d'urgence / Pivot sur place obligatoire)
 #define DIST_CRITIQUE           33.0f
 #define DIST_CRITIQUE1           28.0f
 
@@ -96,8 +83,8 @@ typedef void (*LogicFunction_t)(void);
 
 
 // --- 2. TIMERS (TICKS) ---
-// HystÈrÈsis temporelle : Une fois que le capteur dit "C'est libre", 
-// on continue de tourner un tout petit peu pour dÈgager l'arriËre du robot.
-#define MARGE_SECURITE_ROTATION  5   // ~5ms de rotation supplÈmentaire
-#define TIMEOUT_BLOCAGE          2000 // Si on tourne > 2sec, on considËre qu'on est coincÈ
+// Hyst√©r√©sis temporelle : Une fois que le capteur dit "C'est libre", 
+// on continue de tourner un tout petit peu pour d√©gager l'arri√®re du robot.
+#define MARGE_SECURITE_ROTATION  5   // ~5ms de rotation suppl√©mentaire
+#define TIMEOUT_BLOCAGE          2000 // Si on tourne > 2sec, on consid√®re qu'on est coinc√©
 #endif	/* MAIN_H */
