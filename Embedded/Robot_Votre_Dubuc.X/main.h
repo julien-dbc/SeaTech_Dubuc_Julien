@@ -54,17 +54,11 @@ void SetNextRobotStateInMazeMode(void);
 
 typedef void (*LogicFunction_t)(void);
 
-
-//#define DIST_OBSTACLE_DETECTE   35.0f  
-//#define DIST_OBSTACLE_DETECTE1   25.0f  
-//#define DIST_OBSTACLE_DETECTE2   23.0f  
 // Distance pour ARRÊTER de tourner (Voie libre)
-// Doit être supérieur à DIST_OBSTACLE_DETECTE pour éviter l'effet "Mite autour de la lampe"
 #define DIST_VOIE_LIBRE         40.0f  
-// Distance critique (Arrêt d'urgence / Pivot sur place obligatoire)
+// Distance critique
 #define DIST_CRITIQUE           33.0f
 #define DIST_CRITIQUE1           28.0f
-
 
 
 // Seuils binaires pour le masque (Bitmask)
@@ -75,9 +69,6 @@ typedef void (*LogicFunction_t)(void);
 #define MASK_TDD  0x01  // 00001 - Droite Droite
 
 
-
-// --- 2. TIMERS (TICKS) ---
-// Hystérésis temporelle : Une fois que le capteur dit "C'est libre", 
 // on continue de tourner un tout petit peu pour dégager l'arrière du robot.
 #define MARGE_SECURITE_ROTATION  5   // ~5ms de rotation supplémentaire
 #define TIMEOUT_BLOCAGE          2000 // Si on tourne > 2sec, on considère qu'on est coincé
