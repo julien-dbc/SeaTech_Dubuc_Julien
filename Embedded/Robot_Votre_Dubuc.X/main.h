@@ -52,12 +52,6 @@ void StopRobotCompletely(void);
 void SetNextRobotStateInMazeMode(void);
 
 
-
-    
-#define OBSTACLE_THRESHOLD3 170.0f
-#define MAX_CONSECUTIVE_TURNS 50
-
-
 typedef void (*LogicFunction_t)(void);
 
 
