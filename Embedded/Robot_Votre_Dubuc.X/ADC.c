@@ -13,7 +13,7 @@ unsigned char ADCConversionFinishedFlag;
 /****************************************************************************************************/
 void InitADC1(void) {
     //cf. ADC Reference Manual page 47
-    //Configuration en mode 12 bits mono canal ADC avec conversions successives sur 4 éentres
+    //Configuration en mode 12 bits mono canal ADC avec conversions successives sur 4 Ã©entres
     /************************************************************/
     //AD1CON1 Configuration de base de l?ADC
     /************************************************************/
@@ -38,14 +38,14 @@ void InitADC1(void) {
     AD1CON3bits.ADCS = 8; // ADC Conversion Clock TAD = TCY * (ADCS + 1)
     AD1CON3bits.SAMC = 2; // Auto Sample Time
     /************************************************************/
-    //AD1CON4 DMA (non utilisé ici)
+    //AD1CON4 DMA (non utilisÃ© ici)
     /************************************************************/
     AD1CON4bits.ADDMAEN = 0; // DMA is not used
     /************************************************************/
     //Configuration des ports analogiques
     /************************************************************/
-    //ADC éutiliss : 8(B8)-9(B9)-10(B10)
-    ANSELBbits.ANSB8 = 1; //entrée
+    //ADC Ã©utiliss : 8(B8)-9(B9)-10(B10)
+    ANSELBbits.ANSB8 = 1; //entrÃ©e
     ANSELBbits.ANSB9 = 1;
     ANSELBbits.ANSB10 = 1;
     
@@ -69,11 +69,11 @@ void InitADC1(void) {
 
 
 
-/* Routine d'interruption ADC - Optimisée pour la réactivité */
+
 void __attribute__((interrupt, no_auto_psv)) _AD1Interrupt(void) {
     IFS0bits.AD1IF = 0;
 
-    // 1. Lecture directe des valeurs brutes
+    // 1. Lecture directe des valeurs
     unsigned int val_gauche_gauche = ADC1BUF0; // AN8
     unsigned int val_gauche        = ADC1BUF1; // AN9
     unsigned int val_centre        = ADC1BUF2; // AN10
@@ -86,11 +86,10 @@ void __attribute__((interrupt, no_auto_psv)) _AD1Interrupt(void) {
     ADCResult[3] = val_droit;
     ADCResult[4] = val_droit_droit;
 
-    // 2. Conversion RAPIDE (Entiers) pour mise à jour de l'état
-    // Formule simplifiée dérivée de votre doc : Dist = 42200 / ADC - 5
-    // Protection contre la division par zéro si ADC=0
+    // 2. Conversion mise Ã  jour de l'Ã©tat
+    // Formule simplifiÃ©e dÃ©rivÃ©e de votre doc : Dist = 42200 / ADC - 5
     if(val_centre > 100) robotState.distanceTelemetreCentre = (42200 / val_centre) - 5;
-    else robotState.distanceTelemetreCentre = 80.0; // Trop loin
+    else robotState.distanceTelemetreCentre = 80.0; 
 
     if(val_gauche > 100) robotState.distanceTelemetreGauche = (42200 / val_gauche) - 5;
     else robotState.distanceTelemetreGauche = 80.0;
@@ -98,7 +97,6 @@ void __attribute__((interrupt, no_auto_psv)) _AD1Interrupt(void) {
     if(val_droit > 100) robotState.distanceTelemetreDroit = (42200 / val_droit) - 5;
     else robotState.distanceTelemetreDroit = 80.0;
     
-    // Ajoutez ici les autres capteurs si vous les utilisez dans la logique
     if(val_gauche_gauche > 100) robotState.distanceTelemetreGaucheGauche = (42200 / val_gauche_gauche) - 5;
     else robotState.distanceTelemetreGaucheGauche = 80.0;
     
