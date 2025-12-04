@@ -36,14 +36,12 @@ void StopRobotCompletely(void) {
     PWMSetSpeedConsigne(0, MOTEUR_DROIT);
     PWMSetSpeedConsigne(0, MOTEUR_GAUCHE);
     EN_PWM = 0; 
-    // Allumer toutes les LEDs pour signaler l'arrêt
     LED_BLANCHE_1 = 1; LED_BLEUE_1 = 1; LED_ORANGE_1 = 1; LED_ROUGE_1 = 1; LED_VERTE_1 = 1;
 }
 
 
 int IsPathClear(void) {
-    // On vérifie le Centre, la Gauche (TG) et la Droite (TD).
-    // Il faut que TOUT soit supérieur au seuil "VOIE_LIBRE".
+    // Il faut que TOUT soit supÃ©rieur au seuil "VOIE_LIBRE".
     if (robotState.distanceTelemetreCentre > DIST_VOIE_LIBRE &&
         robotState.distanceTelemetreGauche > DIST_VOIE_LIBRE &&
         robotState.distanceTelemetreDroit  > DIST_VOIE_LIBRE) 
@@ -90,23 +88,17 @@ int main(void) {
             EN_PWM = 1;                   
             stateRobot = STATE_AVANCE;
             LED_VERTE_2 = 1;
-            
-            // Paramètres spécifiques Maze (souvent plus lent pour être précis)
             vitesse_avance = 30; 
-            
             pfn_SetNextRobotState = &SetNextRobotStateInAutomaticMode;
             DIST_OBSTACLE_DETECTE=30.0;
             DIST_OBSTACLE_DETECTE1=20.0;
             DIST_OBSTACLE_DETECTE2=15.0;
-        }
-        
-        
+        }     
     }
-    
     
     while (robot_is_running==1) {
         
-        // 1. Arrêt au bout de 60s
+        // 1. ArrÃªt au bout de 60s
         if (t1 - start_time_ticks >= T_60_SECONDS_TICKS) {
             robot_is_running = 0;
             StopRobotCompletely();
@@ -149,44 +141,44 @@ void OperatingSystemLoop(void)
         break;
 
     case STATE_AVANCE_EN_COURS:
-        pfn_SetNextRobotState(); // On vérifie les obstacles en continu
+        pfn_SetNextRobotState(); // On vÃ©rifie les obstacles en continu
         break;
 
-    // --- ROTATION GAUCHE (Boucle Fermée) ---
+    // --- ROTATION GAUCHE ---
     case STATE_TOURNE_GAUCHE:
         PWMSetSpeedConsigne(22, MOTEUR_DROIT);
-        PWMSetSpeedConsigne(-1, MOTEUR_GAUCHE); // Pivot sur roue
+        PWMSetSpeedConsigne(-1, MOTEUR_GAUCHE);
         timestamp = 0; 
-        finishing_turn = 0; // Reset du flag de fin
+        finishing_turn = 0; // Reset du flag
         stateRobot = STATE_TOURNE_GAUCHE_EN_COURS;
         break;
 
     case STATE_TOURNE_GAUCHE_EN_COURS:
-        // 1. Sécurité Timeout : Si on tourne depuis trop longtemps, on est coincé
+        // SÃ©curitÃ© : Si on tourne depuis trop longtemps, on est coincÃ©
         if (timestamp > TIMEOUT_BLOCAGE) {
             stateRobot = STATE_RECULE;
             return;
         }
 
-        // 2. Vérification de la sortie (Si on n'est pas déjà en train de finir)
+        // VÃ©rification de la sortie
         if (finishing_turn == 0) {
             if (IsPathClear()) {
-                finishing_turn = 1; // On a vu la sortie !
-                timestamp = 0;      // On reset le temps pour la marge de sécurité
+                finishing_turn = 1;
+                timestamp = 0;      // On reset le temps
             }
         }
-        // 3. Application de la marge de sécurité (hystérésis)
+        // Application de la marge de sÃ©curitÃ© (hystÃ©rÃ©sis)
         else {
-            // On continue de tourner un tout petit peu (MARGE_SECURITE_ROTATION)
+            // On continue de tourner un tout petit peu
             if (timestamp > MARGE_SECURITE_ROTATION) {
-                stateRobot = STATE_AVANCE; // FINI ! On repart tout droit
+                stateRobot = STATE_AVANCE; 
             }
         }
         break;
 
-    // --- ROTATION DROITE (Boucle Fermée) ---
+    // --- ROTATION DROITE ---
     case STATE_TOURNE_DROITE:
-        PWMSetSpeedConsigne(-1, MOTEUR_DROIT); // Pivot sur roue
+        PWMSetSpeedConsigne(-1, MOTEUR_DROIT);
         PWMSetSpeedConsigne(22, MOTEUR_GAUCHE);
         timestamp = 0; 
         finishing_turn = 0;
@@ -221,11 +213,9 @@ void OperatingSystemLoop(void)
         break;
 
     case STATE_TOURNE_SUR_PLACE_GAUCHE_EN_COURS:
-        // On impose quand même une rotation minimale de 100ms pour se dégager d'un mur frontal
         if (IsPathClear()) { 
              stateRobot = STATE_AVANCE;
         }
-        // Timeout si bloqué
         if (timestamp > TIMEOUT_BLOCAGE) stateRobot = STATE_RECULE;
         break;
         
@@ -244,7 +234,7 @@ void OperatingSystemLoop(void)
         if (timestamp > TIMEOUT_BLOCAGE) stateRobot = STATE_RECULE;
         break;
 
-    // --- GESTION DU BLOCAGE (RECUL) ---
+    // --- GESTION DU BLOCAGE ---
     case STATE_RECULE:
         PWMSetSpeedConsigne(-20, MOTEUR_DROIT);
         PWMSetSpeedConsigne(-20, MOTEUR_GAUCHE);
@@ -253,7 +243,7 @@ void OperatingSystemLoop(void)
         break;
 
     case STATE_RECULE_EN_COURS:
-        // Recul sur temps fixe (obligatoire car pas d'yeux derrière)
+        // Recul sur temps fixe
         if (timestamp > 15) { 
             stateRobot = STATE_DEMI_TOUR; 
         }
@@ -267,7 +257,7 @@ void OperatingSystemLoop(void)
         break;
 
     case STATE_DEMI_TOUR_EN_COURS:
-        // Demi-tour sur temps fixe (pour faire ~180°)
+        // Demi-tour sur temps fixe ~180Â°
         if (timestamp > 15) {
             stateRobot = STATE_AVANCE;
         }
@@ -279,23 +269,18 @@ void OperatingSystemLoop(void)
     }
 }
 
-
-
 unsigned char nextStateRobot = 0;
-
-
 
 void SetNextRobotStateInAutomaticMode(void)
 {
-    // 1. Acquisition des distances (Lecture depuis la struct globale)
+    // Acquisition des distances
     float d_TC  = robotState.distanceTelemetreCentre;
     float d_TG  = robotState.distanceTelemetreGauche;
     float d_TD  = robotState.distanceTelemetreDroit;
-    // Assumons que ces champs ont été ajoutés à la struct ROBOT_STATE_BITS [cite: 401]
     float d_TGG = robotState.distanceTelemetreGaucheGauche; 
     float d_TDD = robotState.distanceTelemetreDroiteDroite;
 
-    // 2. Création du Masque Binaire (Obstacle Map)
+    // Masque Binaire
     // 1 = Obstacle, 0 = Libre
     unsigned char obstacleMask = 0;
     
@@ -305,82 +290,74 @@ void SetNextRobotStateInAutomaticMode(void)
     if (d_TD  < DIST_OBSTACLE_DETECTE1) obstacleMask |= MASK_TD;
     if (d_TDD < DIST_OBSTACLE_DETECTE2) obstacleMask |= MASK_TDD;
 
-    // 3. Vérification de Sécurité (CRITIQUE)
-    // Priorité absolue : Si trop près, on ignore le masque standard pour pivoter d'urgence
+    // SÃ©curitÃ© (CRITIQUE)
+    // PrioritÃ© absolue
     if (d_TC < DIST_CRITIQUE || d_TG < DIST_CRITIQUE1 || d_TD < DIST_CRITIQUE1) {
-        // Logique d'urgence : fuir le coté le plus bloqué
+        // Logique : Fuir le cotÃ© le plus bloquÃ©
         if ((d_TG + d_TGG) < (d_TD + d_TDD)) {
-            nextStateRobot = STATE_TOURNE_SUR_PLACE_DROITE; // Trop bloqué à gauche
+            nextStateRobot = STATE_TOURNE_SUR_PLACE_DROITE; // Trop bloquÃ© Ã  gauche
         } else {
-            nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE; // Trop bloqué à droite ou face
+            nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE; // Trop bloquÃ© Ã  droite ou face
         }
     }
-    // 4. Logique Standard via Switch (Les 32 cas)
+    // 4. Logique 32 cas
     else {
         switch (obstacleMask) {
             // --- CAS 0 : VOIE LIBRE ---
-            case 0b00000: // 0: Tout libre
+            case 0b00000: // libre
                 nextStateRobot = STATE_AVANCE;
                 break;
 
-            // --- CAS OBSTACLES LATÉRAUX SEULS (Suivi de mur/Centrage) ---
-            case 0b10000: // 16: Mur très à gauche
-            case 0b01000: // 8:  Mur à gauche
-            case 0b11000: // 24: Mur large à gauche
-                nextStateRobot = STATE_TOURNE_DROITE; // Correction légère
+            // --- CAS OBSTACLES LATÃ‰RAUX SEULS (Suivi de mur/Centrage) ---
+            case 0b10000: // trÃ¨s Ã  gauche
+            case 0b01000: // Ã  gauche
+            case 0b11000: // large Ã  gauche
+                nextStateRobot = STATE_TOURNE_DROITE; 
                 break;
 
-            case 0b00001: // 1:  Mur très à droite
-            case 0b00010: // 2:  Mur à droite
-            case 0b00011: // 3:  Mur large à droite
-                nextStateRobot = STATE_TOURNE_GAUCHE; // Correction légère
+            case 0b00001: // trÃ¨s Ã  droite
+            case 0b00010: // Ã  droite
+            case 0b00011: // large Ã  droite
+                nextStateRobot = STATE_TOURNE_GAUCHE; 
                 break;
 
             // --- CAS OBSTACLES FRONTAUX SIMPLES ---
-            case 0b00100: // 4:  Poteau au centre
-                // Choix intelligent: aller vers le coté le plus "ouvert" (TGG vs TDD)
+            case 0b00100: // centre
+                // Aller vers le cotÃ© le plus ouvert
                 if (d_TGG > d_TDD) nextStateRobot = STATE_TOURNE_GAUCHE;
                 else               nextStateRobot = STATE_TOURNE_DROITE;
                 break;
 
-            // --- CAS ENTONNOIRS / COINS (Frontal + Latéral) ---
-            case 0b11100: // 28: Bloqué Gauche + Centre
-            case 0b01100: // 12: Bloqué Gauche + Centre
-            case 0b10100: // 20: Bloqué Ext Gauche + Centre
-                nextStateRobot = STATE_TOURNE_DROITE; // Fuite vers la droite
+            // --- CAS ENTONNOIRS / COINS (Frontal + LatÃ©ral) ---
+            case 0b11100: // Gauche + Centre
+            case 0b01100: // Gauche + Centre
+            case 0b10100: // Ext Gauche + Centre
+                nextStateRobot = STATE_TOURNE_DROITE; 
                 break;
 
-            case 0b00111: // 7:  Bloqué Droite + Centre
-            case 0b00110: // 6:  Bloqué Droite + Centre
-            case 0b00101: // 5:  Bloqué Ext Droite + Centre
-                nextStateRobot = STATE_TOURNE_GAUCHE; // Fuite vers la gauche
+            case 0b00111: // Droite + Centre
+            case 0b00110: // Droite + Centre
+            case 0b00101: // Ext Droite + Centre
+                nextStateRobot = STATE_TOURNE_GAUCHE; 
                 break;
 
-            // --- CAS COMPLEXES / TROP D'OBSTACLES (Sac de noeuds) ---
-            case 0b11110: // 30: Tout sauf ext droite
-            case 0b01111: // 15: Tout sauf ext gauche
-            case 0b11111: // 31: Cul de sac total
-            case 0b10101: // 21: Obstacles éparpillés  
-                nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE;  // Fuite vers la gauche
+            // --- CAS COMPLEXES / TROP D'OBSTACLES ---
+            case 0b11110: // Tout sauf ext droite
+            case 0b01111: // Tout sauf ext gauche
+            case 0b11111: // Cul de sac total
+            case 0b10101: // Obstacles Ã©parpillÃ©s  
+                nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE;  
                 break;
-                
-                
-                
+
             case 0b10001:
-                
-                // Cul de sac ou blocage massif -> Demi-tour sur place
                 nextStateRobot = STATE_AVANCE; 
                 break;
                 
-                
-                
-            
-            case 0b01010: // 10: Tunnel étroit (Murs G et D, Centre libre 
-                nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE;  // Fuite vers la gauche
+            case 0b01010: //Murs G et D, Centre libre 
+                nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE;  
                 break;
                 
-
-            // --- CAS PAR DÉFAUT (Combinaisons rares) ---
+            // --- Combinaisons rares ---
             default:
                 // Si le centre est pris, on tourne. Sinon on avance prudemment.
                 if (obstacleMask & MASK_TC) nextStateRobot = STATE_TOURNE_SUR_PLACE_GAUCHE;
@@ -389,8 +366,8 @@ void SetNextRobotStateInAutomaticMode(void)
         }
     }
 
-    // 5. Application de l'état (Gestion des transitions)
-    // On vérifie si l'état change et si on n'est pas déjà en train d'attendre une transition (state - 1)
+    // Gestion des transitions
+    // On vÃ©rifie si l'Ã©tat change et si on n'est pas dÃ©jÃ  en train d'attendre une transition (state - 1)
     if (nextStateRobot != stateRobot && nextStateRobot != (stateRobot - 1)) {
         stateRobot = nextStateRobot;
     }
