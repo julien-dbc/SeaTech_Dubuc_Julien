@@ -33,22 +33,21 @@ void InitIO()
     _TRISH3 = 0; // LED Verte 
     
     _TRISJ10 = 0; // EN_PWM 
-    //****** Moteurs ************************
 
-    // Configuration des entrées
+
     //Bouton 
-    _TRISH1 = 0;     // Configure RG6 en entrée
+    _TRISH1 = 0;     
     _TRISH2 = 0;
     
 
     /****************************************************************************************************/
     // Gestion des pin remappables
     /****************************************************************************************************/
-    UnlockIO(); // On unlock les registres d'entrées/sorties, ainsi que les registres des PPS
+    UnlockIO(); // On unlock les registres d'entrÃ©es/sorties, ainsi que les registres des PPS
     
     //Assignation des remappable pins
         
-    LockIO(); // On lock les registres d'entrées/sorties, ainsi que les registres des PPS
+    LockIO(); // On lock les registres d'entrÃ©es/sorties, ainsi que les registres des PPS
 }
 
 
